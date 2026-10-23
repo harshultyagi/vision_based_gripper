@@ -71,7 +71,7 @@ selected on validation, and the test numbers above must be reported as already s
 ## Git
 Branch `main` in `C:\Users\harsh\work\VisionBasedGripper` (its own repository; the parent folder
 `C:\Users\harsh` is an unrelated repository — never commit there). Remote `origin` =
-https://github.com/harshultyagi/vision_based_gripper. See the final section for push status.
+https://github.com/harshultyagi/vision_based_gripper. **Pushed**: `main` tracks `origin/main`; after each push, verify with `git fetch && git status -sb` (should show no ahead/behind).
 
 ## Prioritised next actions
 1. Obtain Cornell's `z.txt` (needs the owner's approval to download) → add a true object-wise
