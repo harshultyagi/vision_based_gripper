@@ -1,4 +1,7 @@
-# Deployment — Hugging Face Space
+# Deployment — Hugging Face Space (optional, not in use)
+
+> **Status:** the owner decided not to host a demo (2026-10-23). This guide and
+> `scripts/build_space.py` are kept only in case a hosted demo is wanted later.
 
 Target Space: **https://huggingface.co/spaces/btechbillu/Vission-Based-grasper** (Gradio SDK,
 free CPU hardware). The Space has **not been created or published yet**: the account owner has to

@@ -46,6 +46,14 @@ All notable changes. Dates are UTC+5:30 (local).
 - Fix: device selection now also requires a visible CUDA device. With `CUDA_VISIBLE_DEVICES=""`
   PyTorch reported CUDA as available with 0 devices, and checkpoint loading failed.
 
+### Reproduce from a clone (added later on 2026-10-23)
+- `scripts/evaluate.py --weights models/<run>.pt` evaluates a committed checkpoint into
+  `outputs/eval/`. A fresh clone running on CPU with the GPU hidden reproduced 88.6 % test top-1
+  in about 25 s.
+- Hosted demo dropped by the owner: Hugging Face links removed from the README and the deck. The
+  deck gained slide 8, "Run it yourself" (8 slides).
+- `.gitignore`: Office lock files (`~$*`).
+
 ### Results
 - Five full training runs and a one-time test evaluation; see `docs/experiment_log.md` and
   `experiments/results/`.

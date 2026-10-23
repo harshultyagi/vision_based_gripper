@@ -81,12 +81,14 @@ https://github.com/harshultyagi/vision_based_gripper. **Pushed**: `main` tracks 
 4. Test-time augmentation; then Jacquard / cluttered datasets.
 
 ## Deployment status
-* **Hugging Face Space prepared, not published** (the owner has no HF account yet). Target:
-  https://huggingface.co/spaces/btechbillu/Vission-Based-grasper. Build with
-  `scripts/build_space.py`; upload steps are in `docs/deployment.md`. Tested locally on CPU: both
-  models load, and predictions match the GPU run.
+* **No hosted demo (owner's decision, 2026-10-23).** A Hugging Face Space was prepared and uploaded,
+  but it stayed paused (the account's free CPU quota was 0), and the owner then dropped it. All
+  Hugging Face links were removed from the README and the deck. `scripts/build_space.py` and
+  `docs/deployment.md` remain as optional, unused tooling. People run the project locally instead
+  (README "Usage"; slide 8 of the deck).
 * Slim checkpoints are committed in `models/` (owner-approved exception to the no-checkpoint rule).
-* Presentation: `docs/presentation/Vision_Based_Grasp_Planner.pptx` (7 slides).
+* Presentation: `docs/presentation/Vision_Based_Grasp_Planner.pptx` (8 slides; the last one is "Run it
+  yourself").
 
 ## Earlier deployment notes (owner first mentioned Vercel)
 * `app/app.py` is a Gradio app: a long-running Python server that loads PyTorch and a 23 MB

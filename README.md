@@ -129,6 +129,13 @@ Evaluate (validation for model selection; `--split test` only once selection is 
 .venv\Scripts\python.exe scripts\summarize_results.py
 ```
 
+Reproduce the reported test result straight from the committed model, with no training needed. It
+writes to `outputs/eval/` and works on CPU (add `--device cpu` if you have no GPU):
+
+```bash
+.venv\Scripts\python.exe scripts\evaluate.py --weights models\grconvnet_rgbd_image.pt --split test
+```
+
 Predict on one image (prints candidates as JSON and saves an annotated PNG plus a maps figure):
 
 ```bash
@@ -146,16 +153,9 @@ The app uses the slim checkpoints committed in `models/` (7.3 MB each: weights +
 the training state removed), so it works straight after cloning. Full training checkpoints stay in
 `outputs/` and are not in Git.
 
-## Online demo (Hugging Face Space)
-
-Planned at **https://huggingface.co/spaces/btechbillu/Vission-Based-grasper**. It runs on free CPU
-hardware and offers four clickable test-split scenes. The Space is **not published yet**. Build it
-with `scripts/build_space.py` and upload it as described in
-[`docs/deployment.md`](docs/deployment.md). The built folder was tested locally on CPU.
-
 ## Presentation
 
-A 7-slide summary deck (methodology, training choices, results, links):
+An 8-slide summary deck (methodology, training choices, results, links, how to run it):
 [`docs/presentation/Vision_Based_Grasp_Planner.pptx`](docs/presentation/Vision_Based_Grasp_Planner.pptx).
 
 ## Repository layout
