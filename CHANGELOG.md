@@ -29,3 +29,13 @@ All notable changes. Dates are UTC+5:30 (local).
 - Depth cache keyed by source path + size + mtime, so scenes with the same ID from different
   folders (e.g. test fixtures) cannot collide.
 - Validation log printed `nan` for a top-5 accuracy of exactly 0.
+- `.gitignore` pattern `data/` also matched `src/grasp_planner/data/`, so the data package was
+  missing from the first two commits. Found by the clean-clone reproduction test; patterns are
+  now anchored to the repository root (`/data/`, `/outputs/`).
+- App crashed at start-up on Windows consoles (cp1252) when printing the status text; stdout is
+  now reconfigured to UTF-8.
+- Per-image overlay figures (full-size dataset images, ~23 MB) are no longer committed.
+
+### Results
+- Five full training runs and a one-time test evaluation; see `docs/experiment_log.md` and
+  `experiments/results/`.

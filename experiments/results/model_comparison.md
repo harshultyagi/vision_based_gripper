@@ -14,3 +14,36 @@
 
 | run | split strategy | epochs | best epoch | top-1 | top-5 | centre err (px) | angle err (deg) | width err (px) | n images |
 |---|---|---|---|---|---|---|---|---|---|
+| ggcnn_rgbd_block | block | 50 | 19 | 78.4% | 91.4% | 9.9 | 17.2 | 14.8 | 116 |
+| ggcnn_rgbd_image | image | 75 | 44 | 84.8% | 93.2% | 8.7 | 16.8 | 14.0 | 132 |
+| grconvnet_rgb_image | image | 80 | 49 | 90.2% | 97.7% | 8.1 | 12.9 | 20.0 | 132 |
+| grconvnet_rgbd_block | block | 49 | 18 | 75.9% | 90.5% | 11.7 | 18.4 | 16.6 | 116 |
+| grconvnet_rgbd_image | image | 100 | 85 | 88.6% | 95.5% | 8.4 | 15.0 | 19.2 | 132 |
+
+## Uncertainty (top-1)
+
+95% Wilson score intervals:
+
+| run | split | top-1 | 95% CI |
+|---|---|---|---|
+| ggcnn_rgbd_block | val | 73.8% | 65.3% – 80.8% |
+| ggcnn_rgbd_block | test | 78.4% | 70.1% – 85.0% |
+| ggcnn_rgbd_image | val | 88.0% | 81.4% – 92.5% |
+| ggcnn_rgbd_image | test | 84.8% | 77.8% – 90.0% |
+| grconvnet_rgb_image | val | 90.2% | 84.0% – 94.2% |
+| grconvnet_rgb_image | test | 90.2% | 83.9% – 94.2% |
+| grconvnet_rgbd_block | val | 80.3% | 72.4% – 86.4% |
+| grconvnet_rgbd_block | test | 75.9% | 67.3% – 82.7% |
+| grconvnet_rgbd_image | val | 93.2% | 87.6% – 96.4% |
+| grconvnet_rgbd_image | test | 88.6% | 82.1% – 93.0% |
+
+Paired exact McNemar tests (same images, discordant pairs only):
+
+| split | A | B | A only correct | B only correct | p-value |
+|---|---|---|---|---|---|
+| val | grconvnet_rgbd_image | ggcnn_rgbd_image | 12 | 5 | 0.143 |
+| test | grconvnet_rgbd_image | ggcnn_rgbd_image | 11 | 6 | 0.332 |
+| val | grconvnet_rgbd_block | ggcnn_rgbd_block | 14 | 6 | 0.115 |
+| test | grconvnet_rgbd_block | ggcnn_rgbd_block | 8 | 11 | 0.648 |
+| val | grconvnet_rgbd_image | grconvnet_rgb_image | 9 | 5 | 0.424 |
+| test | grconvnet_rgbd_image | grconvnet_rgb_image | 7 | 9 | 0.804 |

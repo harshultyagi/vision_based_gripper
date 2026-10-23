@@ -6,7 +6,7 @@ Chronological record of every run in this project, including smoke tests. Number
 ## 2026-10-23 — Session 1
 
 ### Environment
-Windows 11, Python 3.12.10, PyTorch 2.11.0+cu128 (CUDA runtime 12.8), NVIDIA GeForce RTX 4060
+Windows 11, Python 3.12.7 (project venv), PyTorch 2.11.0+cu128 (CUDA runtime 12.8), NVIDIA GeForce RTX 4060
 Laptop GPU (8 GB, driver 592.82), AMD Ryzen 7 7840HS, 15.3 GB RAM. Recorded per run in `env.json`.
 
 ### Smoke tests (NOT real training)
@@ -52,5 +52,25 @@ After this point each run's `best.pt` is evaluated **once** on its test split
 (`scripts/evaluate.py --split test`). The test numbers are reported as they come and are not
 used to change any model, setting or selection.
 
-### Test evaluation
-See below (appended after it was run).
+### Test evaluation (run once per model, ≈ 19:00 local, after the selection above)
+
+`scripts/evaluate.py --split test` for each run's `best.pt`. GPU idle during latency timing.
+
+| Run | Test split | n | Test top-1 | 95 % CI | Test top-5 | Val top-1 |
+|---|---|---|---|---|---|---|
+| **grconvnet_rgbd_image (final)** | image | 132 | **88.6 %** | 82.1–93.0 % | 95.5 % | 93.2 % |
+| ggcnn_rgbd_image | image | 132 | 84.8 % | 77.8–90.0 % | 93.2 % | 88.0 % |
+| grconvnet_rgb_image | image | 132 | 90.2 % | 83.9–94.2 % | 97.7 % | 90.2 % |
+| grconvnet_rgbd_block | block | 116 | 75.9 % | 67.3–82.7 % | 90.5 % | 80.3 % |
+| ggcnn_rgbd_block | block | 116 | 78.4 % | 70.1–85.0 % | 91.4 % | 73.8 % |
+
+Observations, recorded without acting on them:
+* The selected model's test accuracy is 4.6 points below its validation accuracy. Picking the best
+  of 100 noisy validation epochs is optimistic, and the 133-image validation set is small.
+* The RGB-only GR-ConvNet scored higher on test than the RGB-D model (90.2 vs 88.6 %). Paired
+  exact McNemar test: p = 0.80, so this is not a significant difference. The selection, made on
+  validation, is **not** changed.
+* On the block split GG-CNN scored higher on test (78.4 vs 75.9 %), the reverse of validation.
+  McNemar p = 0.65.
+* No pairwise difference between models is significant at the 5 % level on either split
+  (`experiments/results/statistics.json`).

@@ -9,10 +9,57 @@
 > results. Every number tagged `num:` is checked against the JSON file it came from. Read it next
 > to the code: Appendix H maps each chapter to its files.
 
-<!-- EXECUTIVE SUMMARY INSERTED BELOW -->
 ## 1. Executive Summary
 
-_(written after the final evaluation; see the end of the document build)_
+**Objective.** Build, train and evaluate a vision-based grasp planner. It takes an image of a
+single object and predicts planar grasps for a parallel-jaw gripper: centre, orientation,
+opening width, a quality score and the two contact points. It ranks several candidates and
+selects the best one according to the model. Training and evaluation use the local copy of the
+Cornell Grasping Dataset.
+
+**What was built.** A complete, tested PyTorch project (`src/grasp_planner/`):
+* a validated Cornell loader (885/885 scenes usable; 1 malformed rectangle rejected and reported);
+* single-affine preprocessing and augmentation that keeps pixels and labels aligned by construction;
+* reproducible image-wise and contiguous-block (approximately object-disjoint) splits;
+* two dense models trained under identical conditions: GG-CNN (70 k parameters) and GR-ConvNet
+  (1.9 M);
+* a decoder: peak finding, validity checks, angle-aware NMS, ranking and back-projection;
+* the Cornell rectangle metric;
+* a CLI predictor and a Gradio web app;
+* 60 automated tests;
+* this report, whose snippets and numbers are machine-checked against the code and result files.
+
+**Final model.** GR-ConvNet with RGB-D input, selected on validation accuracy, at
+`outputs/runs/grconvnet_rgbd_image/checkpoints/best.pt` (epoch 85, not committed to Git).
+
+**Measured results (held-out test split, evaluated once after selection was frozen).**
+
+| Model | Split | Test top-1 | Test top-5 | Latency (fwd / fwd + decode) |
+|---|---|---|---|---|
+| **GR-ConvNet RGB-D (final)** | image-wise, 132 images | **<!-- num: experiments/results/grconvnet_rgbd_image__test.json:top1_accuracy:.1% -->88.6%** (95 % CI 82.1–93.0) | <!-- num: experiments/results/grconvnet_rgbd_image__test.json:top5_accuracy:.1% -->95.5% | 3.7 / 5.8 ms |
+| GG-CNN RGB-D | image-wise | <!-- num: experiments/results/ggcnn_rgbd_image__test.json:top1_accuracy:.1% -->84.8% | <!-- num: experiments/results/ggcnn_rgbd_image__test.json:top5_accuracy:.1% -->93.2% | 1.2 / 3.1 ms |
+| GR-ConvNet RGB only | image-wise | <!-- num: experiments/results/grconvnet_rgb_image__test.json:top1_accuracy:.1% -->90.2% | <!-- num: experiments/results/grconvnet_rgb_image__test.json:top5_accuracy:.1% -->97.7% | 3.9 / 5.8 ms |
+| GR-ConvNet RGB-D | block-wise, 116 images | <!-- num: experiments/results/grconvnet_rgbd_block__test.json:top1_accuracy:.1% -->75.9% | <!-- num: experiments/results/grconvnet_rgbd_block__test.json:top5_accuracy:.1% -->90.5% | — |
+| GG-CNN RGB-D | block-wise | <!-- num: experiments/results/ggcnn_rgbd_block__test.json:top1_accuracy:.1% -->78.4% | <!-- num: experiments/results/ggcnn_rgbd_block__test.json:top5_accuracy:.1% -->91.4% | — |
+
+Metric: the top-ranked grasp has IoU > 25 % and angle difference < 30° with at least one
+labelled grasp. Latency is measured on an RTX 4060 Laptop GPU with batch size 1.
+
+**Key findings.**
+1. A dense network trained in about 10 minutes on a laptop GPU finds a Cornell-valid grasp first
+   in about 9 of 10 held-out scenes, and among its top five in about 19 of 20.
+2. Holding out blocks of consecutive scenes (usually the same object) costs about 6–13 points,
+   so image-wise accuracy partly reflects familiarity with the object.
+3. The differences between GR-ConvNet and GG-CNN, and between RGB-D and RGB, are **not
+   statistically significant** on test sets of this size (paired McNemar p ≥ 0.33). The large
+   published gap between these models was not reproduced under our identical training recipe.
+4. The quality score ranks candidates within an image but does not predict whether the chosen
+   grasp matches a label (identical median scores for successes and failures).
+
+**Key limitations.** Single-object Cornell scenes only. 2-D image-plane grasps only: no 3-D pose,
+no calibration, no collision checking. **No physical validation.** No true object-wise split
+(object IDs unavailable). One seed per configuration. Published numbers (e.g. 97.7 % for
+GR-ConvNet) were obtained under a different protocol and are not directly comparable.
 
 ---
 
@@ -788,7 +835,114 @@ grasp (blue; plate edges thicker than the opening edges) and its contact points 
 `run_experiments.py` (sequential background queue), `evaluate.py`, `summarize_results.py`,
 `make_report_figures.py`, `predict.py`, `check_report.py`.
 
-<!-- CHAPTER 7 INSERTED BELOW -->
+## 7. Training Methodology
+
+### 7.1 Pipeline
+
+```mermaid
+flowchart LR
+  S["split file<br/>(train ids)"] --> DS["CornellGraspDataset<br/>augment=on"]
+  DS --> DL["DataLoader<br/>batch 8, shuffle, 2 workers"]
+  DL --> M["model (AMP fp16)"]
+  M --> L["Smooth-L1 × 4"]
+  L --> O["Adam + GradScaler<br/>clip 5"]
+  O --> M
+  M -. every epoch .-> V["validate: decode + rectangle metric<br/>on val split (no augment)"]
+  V --> C{"val top-1 better?"}
+  C -->|yes| B["save best.pt"]
+  C --> LA["save last.pt, append history.csv"]
+  LA --> E{"30 epochs w/o improvement?"}
+  E -->|yes| STOP["stop"]
+```
+
+### 7.2 Environment
+
+| Item | Value (from `outputs/runs/*/env.json`) |
+|---|---|
+| OS | Windows 11 (10.0.26200) |
+| Python | 3.12.7 (project `.venv`) |
+| PyTorch | 2.11.0+cu128, CUDA runtime 12.8 |
+| GPU | NVIDIA GeForce RTX 4060 Laptop GPU, 8 GB (driver 592.82) |
+| CPU / RAM | AMD Ryzen 7 7840HS (8 cores / 16 threads), 15.3 GB |
+
+PyTorch was installed from the official CUDA index (`--index-url https://download.pytorch.org/whl/cu128`),
+because a plain `pip install torch` on Windows gives the CPU-only build. `torch.cuda.is_available()`
+and a GPU matrix multiplication were checked before training.
+
+### 7.3 Hyperparameters and rationale
+
+<!-- src: configs/default.yaml -->
+```yaml
+train:
+  epochs: 100
+  batch_size: 8
+  val_batch_size: 8
+  optimizer: adam
+  lr: 0.001
+  weight_decay: 0.0
+  scheduler: cosine         # cosine | step | none
+  min_lr: 1.0e-5
+  amp: true                 # mixed precision on CUDA
+  grad_clip: 5.0
+  early_stopping_patience: 30   # epochs without val top-1 improvement (0 = off)
+```
+
+| Setting | Value | Why |
+|---|---|---|
+| input | 224 × 224, RGB-D | GR-ConvNet's published setting; a batch-8 AMP training step peaks at ≈ 448 MB of allocated GPU memory (GG-CNN ≈ 235 MB; measured with `torch.cuda.max_memory_allocated`), far below 8 GB |
+| batch size | 8 | GR-ConvNet's value; 77 updates per epoch on 620 images |
+| optimiser, lr | Adam, 10⁻³ | GR-ConvNet's value; Adam needs little tuning (§4.7) |
+| schedule | cosine to 10⁻⁵ over 100 epochs | smooth decay; no step-size hyperparameters |
+| epochs / patience | ≤ 100 / 30 | full run ≈ 10 min here, so a long budget is cheap; patience stops runs that have plateaued |
+| augmentation | rot ±180°, zoom 0.85–1, shift ±20 px, flip 0.5 | the dataset is small; Cornell objects can appear in any orientation |
+| AMP, clip | fp16 autocast, ‖g‖ ≤ 5 | ≈ 6 s/epoch; clipping as a safety net (no NaN occurred) |
+| workers | 2 | Windows spawns worker processes; 2 workers ran without problems, and `num_workers: 0` is the documented fallback |
+
+These values were **fixed before training** and not tuned. Every configuration was trained once.
+Each experiment config changes only `experiment.name`, `data.modality`, `data.split_file` and
+`model.name`:
+
+<!-- src: configs/experiment_configs/grconvnet_rgbd_image.yaml -->
+```yaml
+base: configs/default.yaml
+experiment:
+  name: grconvnet_rgbd_image
+data:
+  modality: rgbd
+  split_file: experiments/splits/image_wise_seed42.json
+model:
+  name: grconvnet
+```
+
+### 7.4 Validation, checkpoint selection, resume and seeds
+
+* After every epoch the **whole validation split** is decoded and scored with the same rectangle
+  metric used for testing. `best.pt` is the epoch with the highest validation top-1 accuracy
+  (ties: lower validation loss). This criterion was fixed in the code before any run.
+* `last.pt` is written every epoch. `--resume` continues from it, restoring
+  optimiser/scheduler/scaler/RNG state and the best-so-far record. `tests/test_integration.py`
+  checks that a resumed run starts at the next epoch.
+* Seed 42 for Python, NumPy and PyTorch. Augmentation RNG is seeded per (seed, epoch, index).
+  cuDNN autotuning and non-deterministic GPU kernels mean that bit-exact reruns are **not**
+  guaranteed. Re-running a configuration gives a similar, not identical, curve.
+
+### 7.5 Smoke tests versus real training
+
+| Kind | What | Status |
+|---|---|---|
+| Smoke test | `--smoke`: 2 epochs × 3 batches, 16 val images, separate `*_smoke` run dirs (deleted afterwards) | passed for GR-ConvNet RGB-D, GG-CNN RGB-D, GR-ConvNet RGB. Accuracies meaningless, never reported |
+| Real training | full configs below, background queue `scripts/run_experiments.py` | all five finished. Each `train.log` ends with `TRAINING FINISHED` |
+
+| Run | Epochs run | Best epoch | Stopped early | Wall time |
+|---|---|---|---|---|
+| grconvnet_rgbd_image | 100 | <!-- num: experiments/results/grconvnet_rgbd_image__test.json:checkpoint_epoch -->85 | no | 631 s |
+| ggcnn_rgbd_image | 75 | <!-- num: experiments/results/ggcnn_rgbd_image__test.json:checkpoint_epoch -->44 | yes | 406 s |
+| grconvnet_rgbd_block | 49 | <!-- num: experiments/results/grconvnet_rgbd_block__test.json:checkpoint_epoch -->18 | yes | 319 s |
+| ggcnn_rgbd_block | 50 | <!-- num: experiments/results/ggcnn_rgbd_block__test.json:checkpoint_epoch -->19 | yes | 224 s |
+| grconvnet_rgb_image | 80 | <!-- num: experiments/results/grconvnet_rgb_image__test.json:checkpoint_epoch -->49 | yes | 466 s |
+
+Epoch indices start at 0. Wall times come from `outputs/logs/run_experiments.log` and include
+start-up and per-epoch validation. The full queue of five runs took about 34 minutes.
 
 ## 8. Grasp Candidate Generation and Selection
 
@@ -888,9 +1042,219 @@ grasp centres. It is **not a calibrated probability of success**, and the top ca
 "globally optimal" in any physical sense. It is the best candidate *according to the model and
 this scoring procedure*.
 
-<!-- DECODE FIGURE INSERTED BELOW -->
+### 8.6 A worked decoding example
 
-<!-- CHAPTER 9 INSERTED BELOW -->
+![Decoding pipeline](figures/decode_pipeline_grconvnet_rgbd_image.png)
+*Figure 8.1 — Final model on test scene pcd0101 (a stick-shaped object), generated by
+`scripts/make_report_figures.py`. (a) Network input crop with the five GT rectangles. (b) Raw
+quality map: high values along the object's long axis, where grasps across it are possible.
+(c) Smoothed map with its two local maxima ≥ 0.1. (d) Both candidates pass the validity checks
+and survive NMS, because they are about 55 px apart and do not overlap. (e) Back-projected to
+the original image.*
+
+Why does rank 1 beat rank 2? Both are grasps across the stick (θ ≈ 85° and 89°). Rank 1's
+smoothed quality is 1.122 versus 1.014. The network is somewhat more confident near the
+object's right half, and nothing else enters the ranking. Both happen to match labelled grasps (best IoU 0.77 and 0.43; the stick
+is labelled along its length). Had rank 1 been wrong, top-1 would fail while
+top-5 would succeed. That is exactly the pattern seen in 9 of the 15 test failures (§9.5).
+
+
+## 9. Evaluation and Results
+
+### 9.1 Protocol
+
+Full definitions are in `docs/evaluation_protocol.md`. In short: deterministic preprocessing →
+decode up to 10 ranked candidates → map them to original pixels → compare with **all** valid
+positive GT rectangles of the image. **Top-1 accuracy** is the fraction of images whose
+top-ranked candidate satisfies `IoU > 0.25 and Δθ < 30°` against at least one GT rectangle. It
+is aggregated **per image** (mean of a 0/1 outcome), and an image with no candidate counts as a
+failure. **Top-5** is the same for any of the first five candidates. Centre, angle and width
+errors compare the top candidate with the GT rectangle whose centre is nearest, and are
+averaged over images. Latency is the median of 100 single-image runs on the RTX 4060 Laptop
+GPU, excluding file loading and preprocessing.
+
+Order of operations: train → validate every epoch → select checkpoints and freeze the
+selection (`docs/experiment_log.md`, committed before testing) → evaluate each selected
+checkpoint **once** on its test split.
+
+### 9.2 Training curves
+
+![Image-wise curves](figures/loss_curves_image_wise.png)
+*Figure 9.1 — Image-wise runs, from `history.csv`. Left: training (solid) and validation (dashed)
+loss, log scale. Right: validation top-1 accuracy per epoch.*
+
+![Block-wise curves](figures/loss_curves_block_wise.png)
+*Figure 9.2 — Block-wise runs.*
+
+How to read them:
+* **Training loss above validation loss early on** is expected, not a bug. Training images are
+  augmented (harder) and GR-ConvNet applies dropout in training mode only.
+* **Validation accuracy plateaus by epoch ≈ 20–40** at roughly 85–90 % (image-wise). Further
+  training keeps lowering the training loss. For GR-ConvNet RGB-D, the training loss falls
+  below the validation loss after epoch ≈ 60 while the validation loss creeps up. That is
+  **overfitting**: the network memorises the 620 training scenes. The cosine schedule and
+  best-epoch selection limit the damage, and early stopping ended four of the five runs.
+* **Validation accuracy is noisy** (± 3–5 points from epoch to epoch). With 133 images, one
+  image is 0.75 points. Choosing the best of 100 noisy epochs therefore picks a lucky epoch,
+  and the selected validation score is **optimistically biased** (see §9.4).
+* On the **block split** the best epoch comes early (18–19) and validation loss rises soon
+  after. Overfitting to seen objects starts earlier when validation objects are further from
+  the training objects.
+
+### 9.3 Main results (test split, evaluated once)
+
+| Model | Input | Split | Test images | Top-1 | Top-5 | Centre err. (px, mean) | Angle err. (°, mean) | Width err. (px, mean) |
+|---|---|---|---|---|---|---|---|---|
+| **GR-ConvNet (final)** | RGB-D | image | 132 | **<!-- num: experiments/results/grconvnet_rgbd_image__test.json:top1_accuracy:.1% -->88.6%** | <!-- num: experiments/results/grconvnet_rgbd_image__test.json:top5_accuracy:.1% -->95.5% | <!-- num: experiments/results/grconvnet_rgbd_image__test.json:center_error_px.mean:.1f -->8.4 | <!-- num: experiments/results/grconvnet_rgbd_image__test.json:angle_error_deg.mean:.1f -->15.0 | <!-- num: experiments/results/grconvnet_rgbd_image__test.json:width_error_px.mean:.1f -->19.2 |
+| GG-CNN | RGB-D | image | 132 | <!-- num: experiments/results/ggcnn_rgbd_image__test.json:top1_accuracy:.1% -->84.8% | <!-- num: experiments/results/ggcnn_rgbd_image__test.json:top5_accuracy:.1% -->93.2% | <!-- num: experiments/results/ggcnn_rgbd_image__test.json:center_error_px.mean:.1f -->8.7 | <!-- num: experiments/results/ggcnn_rgbd_image__test.json:angle_error_deg.mean:.1f -->16.8 | <!-- num: experiments/results/ggcnn_rgbd_image__test.json:width_error_px.mean:.1f -->14.0 |
+| GR-ConvNet | RGB | image | 132 | <!-- num: experiments/results/grconvnet_rgb_image__test.json:top1_accuracy:.1% -->90.2% | <!-- num: experiments/results/grconvnet_rgb_image__test.json:top5_accuracy:.1% -->97.7% | <!-- num: experiments/results/grconvnet_rgb_image__test.json:center_error_px.mean:.1f -->8.1 | <!-- num: experiments/results/grconvnet_rgb_image__test.json:angle_error_deg.mean:.1f -->12.9 | <!-- num: experiments/results/grconvnet_rgb_image__test.json:width_error_px.mean:.1f -->20.0 |
+| GR-ConvNet | RGB-D | block | 116 | <!-- num: experiments/results/grconvnet_rgbd_block__test.json:top1_accuracy:.1% -->75.9% | <!-- num: experiments/results/grconvnet_rgbd_block__test.json:top5_accuracy:.1% -->90.5% | <!-- num: experiments/results/grconvnet_rgbd_block__test.json:center_error_px.mean:.1f -->11.7 | <!-- num: experiments/results/grconvnet_rgbd_block__test.json:angle_error_deg.mean:.1f -->18.4 | <!-- num: experiments/results/grconvnet_rgbd_block__test.json:width_error_px.mean:.1f -->16.6 |
+| GG-CNN | RGB-D | block | 116 | <!-- num: experiments/results/ggcnn_rgbd_block__test.json:top1_accuracy:.1% -->78.4% | <!-- num: experiments/results/ggcnn_rgbd_block__test.json:top5_accuracy:.1% -->91.4% | <!-- num: experiments/results/ggcnn_rgbd_block__test.json:center_error_px.mean:.1f -->9.9 | <!-- num: experiments/results/ggcnn_rgbd_block__test.json:angle_error_deg.mean:.1f -->17.2 | <!-- num: experiments/results/ggcnn_rgbd_block__test.json:width_error_px.mean:.1f -->14.8 |
+
+Every image of every split received at least one candidate. Medians, best-IoU and the
+validation numbers are in `experiments/results/*.json`. The generated table
+`experiments/results/model_comparison.md` lists validation and test side by side. Each row's
+config is `outputs/runs/<run>/config.yaml`. The checkpoint path, SHA-256 prefix (the final
+model's is `23fda02a829da78c`) and epoch are recorded in each result JSON.
+
+### 9.4 Uncertainty and model comparison
+
+Each accuracy is a proportion over 116–133 images. 95 % Wilson intervals
+(`experiments/results/statistics.json`):
+
+| Run | Val top-1 [95 % CI] | Test top-1 [95 % CI] |
+|---|---|---|
+| GR-ConvNet RGB-D image | 93.2 % [87.6, 96.4] | 88.6 % [82.1, 93.0] |
+| GG-CNN RGB-D image | 88.0 % [81.4, 92.5] | 84.8 % [77.8, 90.0] |
+| GR-ConvNet RGB image | 90.2 % [84.0, 94.2] | 90.2 % [83.9, 94.2] |
+| GR-ConvNet RGB-D block | 80.3 % [72.4, 86.4] | 75.9 % [67.3, 82.7] |
+| GG-CNN RGB-D block | 73.8 % [65.3, 80.8] | 78.4 % [70.1, 85.0] |
+
+Two models evaluated on the same images are compared with an **exact McNemar test**, which looks
+only at images where exactly one model succeeds:
+
+| Split | A vs B | only A correct | only B correct | p |
+|---|---|---|---|---|
+| image, test | GR-ConvNet RGB-D vs GG-CNN RGB-D | 11 | 6 | 0.332 |
+| block, test | GR-ConvNet RGB-D vs GG-CNN RGB-D | 8 | 11 | 0.648 |
+| image, test | GR-ConvNet RGB-D vs GR-ConvNet RGB | 7 | 9 | 0.804 |
+| image, val | GR-ConvNet RGB-D vs GG-CNN RGB-D | 12 | 5 | 0.143 |
+
+**What this supports.** GR-ConvNet RGB-D had the best validation accuracy on both splits and was
+selected. On the image-wise test split it scored 3.8 points above GG-CNN. That difference is
+**not statistically significant** (p = 0.33), and on the block split the order reversed (also
+not significant). The RGB-only model scored slightly higher than RGB-D on test, which is also
+not significant. **The data cannot distinguish these models.** A much larger test set, or
+repeated cross-validation with several seeds, would be needed. The GR-ConvNet paper's large
+advantage over GG-CNN (97.7 % vs 73.0 %) was not reproduced here. A likely reason is that our
+GG-CNN baseline uses the same strong training recipe as GR-ConvNet: RGB-D input, ±180° rotation
+augmentation and the same decoding. The originally reported GG-CNN number used depth only and
+a different protocol.
+
+**Image-wise vs block-wise.** All models lose 6–13 points on the block split (test). The block
+split keeps runs of consecutive scenes, which usually means the same object, out of training.
+So this drop is a measure of how much image-wise accuracy depends on having seen the same or
+similar objects in training. It is the most practically relevant number in this study. It is
+**not** a validated object-wise result (§3.7).
+
+**Generalisation gap.** Validation → test changes from −4.6 to +4.6 points. Selection bias
+(best epoch of 100 on a small validation set) explains the downward shifts, and sampling noise
+explains the rest.
+
+### 9.5 Qualitative results and failure analysis
+
+![Qualitative test results](figures/qualitative_grconvnet_rgbd_image_test.png)
+*Figure 9.3 — Final model on random test-split successes (top) and failures (bottom), from
+`scripts/make_report_figures.py`. Green: GT positives. Blue: selected grasp, with plate edges
+drawn thicker. Amber: ranks 2–3. Magenta: contact points. Titles give the best IoU with any GT
+rectangle and the angle error to the nearest-centre GT rectangle.*
+
+The final model's 15 test failures (`grconvnet_rgbd_image__test_per_image.csv`) break down as:
+
+| Failure type | Count | Example | Comment |
+|---|---|---|---|
+| wrong location: centre > 20 px from every GT centre | 7 | pcd0741 (centre error 52 px, IoU 0.04) | often a plausible grasp on an unlabelled part of the object |
+| right place, wrong orientation (Δθ ≥ 30°) | 5 | pcd0802 (Δθ = 73°, IoU 0.32) | e.g. perpendicular grasps on roundish objects |
+| right place and angle, IoU just ≤ 0.25 | 3 | pcd0105 (IoU 0.25, failing the strict `>`), pcd0401 (0.24), pcd0604 (0.25) | near misses; in pcd0105 the opening is 59 px wider than the nearest label |
+
+In 9 of the 15 failures **one of the ranks 2–5 does match** a GT rectangle (top-5 accuracy
+95.5 %). The model often proposes a labelled grasp, but not first. The median quality score is
+the same for successes and failures (1.08 vs 1.08). The score orders candidates *within* an image
+but does **not** indicate whether the selected grasp will match a label, let alone succeed
+physically. Scores above 1 occur because the quality head has no output activation (§4.2).
+
+Validation failures (Chapter 6 tooling, `experiments/figures/grconvnet_rgbd_image/val/`, not
+committed because they are full-size dataset images) show the same patterns. In pcd0890 the
+model chose the brim of a cap, a reasonable grasp that the annotators did not label. In pcd0152
+the opening was wider than any label.
+
+### 9.6 Inference examples on images not used for training
+
+**Test-split scene (`scripts/predict.py`).** Running the final model on test scene pcd0101 (RGB +
+depth) printed two candidates (`outputs/logs/predict_pcd0101.txt`):
+
+| rank | centre (px) | θ | width (px) | score | contact points (px) |
+|---|---|---|---|---|---|
+| 1 | (305.93, 297.50) | 84.92° | 66.94 | 1.1224 | (302.97, 330.84), (308.89, 264.16) |
+| 2 | (250.64, 292.36) | 88.65° | 56.48 | 1.0143 | (249.98, 320.59), (251.31, 264.12) |
+
+The top candidate matches a GT rectangle (best IoU 0.77, angle error 11°). Figure 8.1 shows the
+same scene step by step.
+
+**External-style images (background only).** Cornell's `backgrounds/` folder contains
+object-free images that were never used for training or evaluation. Run through the RGB-only
+model, none of the four shown produced a candidate above the 0.1 quality threshold
+(Figure 9.4). This is the desired behaviour: the model does not hallucinate grasps on an empty
+table. Real external photos (other cameras, cluttered backgrounds) were **not** available, so
+behaviour under domain shift is unmeasured.
+
+![Background images](figures/background_grconvnet_rgb_image.png)
+*Figure 9.4 — RGB-only model on background-only images (crop window shown): no candidates.*
+
+### 9.7 Runtime
+
+| Model | Forward pass (median) | Forward + decode (median) |
+|---|---|---|
+| GR-ConvNet RGB-D | <!-- num: experiments/results/grconvnet_rgbd_image__test.json:latency.forward_ms_median:.1f -->3.7 ms | <!-- num: experiments/results/grconvnet_rgbd_image__test.json:latency.forward_plus_decode_ms_median:.1f -->5.8 ms |
+| GG-CNN RGB-D | <!-- num: experiments/results/ggcnn_rgbd_image__test.json:latency.forward_ms_median:.1f -->1.2 ms | <!-- num: experiments/results/ggcnn_rgbd_image__test.json:latency.forward_plus_decode_ms_median:.1f -->3.1 ms |
+
+Measured on the RTX 4060 Laptop GPU with batch size 1, fp32 weights, no AMP at inference, and
+the GPU otherwise idle (test evaluations were run after all training had finished). Decoding
+(Gaussian filter, peak finding, Shapely NMS) runs on the CPU and costs about 2 ms. Image loading,
+depth inpainting and warping are **excluded** and were not timed. Training took about 6 s per epoch for GR-ConvNet.
+
+### 9.8 Comparison with published work (different conditions)
+
+| Source | Model | Input | Image-wise | Object-wise | Protocol |
+|---|---|---|---|---|---|
+| [Kumra 2020] Table III | GR-ConvNet | RGB-D | 97.7 % | 96.6 % | cross-validation; crop centred on GT; their augmentation |
+| [Kumra 2020] Table III | GG-CNN (as reported) | D | 73.0 % | 69.0 % | as reported there |
+| **this project** | GR-ConvNet | RGB-D | **88.6 %** (single 132-image test split) | 75.9 % on block split (≈ object-wise) | fixed train-chosen crop, single seed |
+| **this project** | GG-CNN | RGB-D | 84.8 % | 78.4 % on block split | same |
+
+The published numbers were **obtained under different conditions** and are not reproduced
+here. Known differences: (i) the GR-ConvNet reference code centres each test crop on the
+image's ground-truth grasps, while this project uses a fixed crop chosen from training data;
+(ii) cross-validation folds versus one 70/15/15 split; (iii) a true object-wise split versus our
+approximate block split; (iv) unspecified epoch counts and selection rules in the paper. The
+roughly 9-point image-wise gap to the paper is therefore **not** a like-for-like measurement of
+implementation quality.
+
+### 9.9 What the evidence does and does not support
+
+**Supported:**
+* A dense network trained here, on this machine, detects Cornell-criterion grasps on about 88–90 %
+  of held-out image-wise test scenes (95 % CI roughly 82–94 %). It runs in a few milliseconds
+  per image on a laptop GPU.
+* Accuracy drops by about 10 points when consecutive-scene blocks are held out.
+* The model proposes several distinct candidates; top-5 accuracy is 95.5 %.
+
+**Not supported:**
+* That GR-ConvNet is better than GG-CNN, or RGB-D better than RGB, on this data. The differences
+  are not significant.
+* Any object-level generalisation claim (no object IDs).
+* Any physical grasp success, 3-D pose accuracy, robustness to clutter, or robustness to other
+  cameras.
 
 ## 10. Inference Application
 
@@ -937,7 +1301,26 @@ and angle conventions and the single-object, planar-only limitation.
 | "Depth size … does not match image size …" | RGB and depth come from different scenes or resolutions |
 | poor grasps on your own photos | domain shift (§11). The model only saw Cornell scenes |
 
-<!-- APP VERIFICATION INSERTED BELOW -->
+### 10.4 Verification performed
+
+The app was launched with `python app/app.py --port 7861`. It loaded the RGB-D checkpoint (the
+RGB-only run had not finished yet at that point and was reported as missing in the status
+panel, as designed). It returned HTTP 200, and its `/run` endpoint was then called through
+`gradio_client` with validation scene pcd0258 (RGB PNG + depth TIFF). The returned selected
+grasp was centre (317.5, 283.4) px, θ = 86.7°, opening 101.5 px, score 1.316, contact points
+(314.6, 334.0) and (320.4, 232.7). This is a grasp across the short side of the box. The
+annotated PNG and JSON were produced for download. `tests/test_app.py` checks that a missing
+checkpoint gives an explicit error and no prediction, and that a loaded model returns real
+candidates.
+
+**Final check, with both models present.** The app was relaunched on port 7862 and its status
+panel listed `grconvnet_rgbd_image` (epoch 85) and `grconvnet_rgb_image` (epoch 49), both on
+CUDA. For test scene pcd0101, uploading RGB + depth used the RGB-D model and returned the same
+two candidates as `scripts/predict.py` (§9.6): rank 1 at (305.9, 297.5), 84.9°, 66.9 px, score
+1.122. Uploading the RGB image alone used the RGB-only model, whose rank 1 was at
+(291.8, 293.6), −87.6°, 45.7 px, score 0.839. That is also a grasp across the stick; −87.6° and
+84.9° differ by only 7.5° modulo 180°.
+
 
 ## 11. Limitations and Future Work
 
@@ -1036,4 +1419,160 @@ one row per image. Figures go to `experiments/figures/<run>/<split>/` and `docs/
 `docs/troubleshooting.md` for errors (CPU-only torch, DataLoader workers on Windows, OOM, missing
 config).
 
-<!-- CONCLUSION AND APPENDICES BELOW -->
+## 13. Conclusion
+
+**Work completed.** The project parses the real local Cornell data with full validation and
+reporting, builds leakage-free reproducible splits, and trains two dense grasp networks to
+completion under identical conditions (five full runs). Each selected checkpoint was evaluated
+exactly once on a held-out test split, with confidence intervals and paired significance tests.
+The trained model is exposed through a CLI and a Gradio app that show ranked candidates, the
+selected grasp, its centre, angle, width, score and contact points.
+
+**Findings.** (1) About 89 % top-1 and 96 % top-5 image-wise test accuracy for the final
+GR-ConvNet RGB-D model, at about 6 ms per image for network plus decoding. (2) About 10 points
+lower when blocks of consecutive scenes are held out. (3) No significant difference between
+architectures or modalities at this test-set size. (4) A quality score that ranks but is not
+calibrated.
+
+**Lessons.**
+* Transform the label *vertices* with the same matrix as the pixels. It removes a whole class
+  of angle and flip bugs.
+* With 120–130 test images, ±6-point confidence intervals make one-run comparisons between
+  models unreliable. Significance tests should be reported, not just point estimates.
+* Picking the best of many noisy validation epochs inflates validation accuracy. Expect the test
+  score to come out lower.
+* Protocol details (how the crop is centred, the split type, cross-validation) move Cornell
+  numbers by several points. Published comparisons must be read with the protocol in hand.
+
+**Next research steps** (§11.2): a true object-wise split once `z.txt` is available, repeated
+seeds or cross-validation, back-projection to 3-D grasps with camera intrinsics, then a
+cluttered dataset and physical trials.
+
+---
+
+## Appendix A — Configuration reference (`configs/default.yaml`)
+
+| Key | Default | Meaning |
+|---|---|---|
+| `experiment.name` | default | run directory name under `outputs/runs/` |
+| `experiment.seed` | 42 | Python/NumPy/PyTorch seed; augmentation RNG seed |
+| `data.split_file` | experiments/splits/image_wise_seed42.json | which split to use |
+| `data.modality` | rgbd | `rgb`, `depth` or `rgbd` (channel order depth, R, G, B) |
+| `data.output_size` | 224 | network input/output side (px) |
+| `data.crop.{cx,cy,size}` | 304, 275, 288 | fixed crop window in original pixels |
+| `data.max_width` | 150 | width-map normaliser (network px) |
+| `data.num_workers` | 2 | DataLoader workers (0 = main process) |
+| `data.augment.*` | enabled, 180°, 0.85, 20 px, 0.5 | rotation range, min zoom, shift, flip probability |
+| `model.name` | grconvnet | `grconvnet` or `ggcnn` |
+| `model.channels / num_residual / dropout` | 32 / 5 / 0.1 | GR-ConvNet width, depth, head dropout |
+| `model.filters` | (32, 16, 8) | GG-CNN filters (when `name: ggcnn`) |
+| `train.epochs / batch_size / val_batch_size` | 100 / 8 / 8 | |
+| `train.optimizer / lr / weight_decay` | adam / 1e-3 / 0 | `adam` or `adamw` |
+| `train.scheduler / min_lr` | cosine / 1e-5 | `cosine`, `step` (needs `step_size`, `gamma`) or `none` |
+| `train.amp / grad_clip` | true / 5.0 | mixed precision; max gradient norm (0 = off) |
+| `train.early_stopping_patience` | 30 | epochs without improvement (0 = off) |
+| `decode.q_sigma / q_threshold / min_distance / max_peaks` | 2.0 / 0.1 / 5 / 50 | peak extraction |
+| `decode.min_width` | 2.0 | minimum opening (network px) |
+| `decode.nms_iou / nms_angle_deg / max_candidates` | 0.3 / 30 / 10 | NMS and output count |
+| `eval.k` | 5 | top-k accuracy |
+
+Machine-specific: `configs/local.yaml` → `dataset_root` (or env `GRASP_DATASET_ROOT`).
+App: `app/app_config.yaml` → `rgbd_checkpoint`, `rgb_checkpoint`.
+
+## Appendix B — Notation
+
+| Symbol | Meaning |
+|---|---|
+| `(x, y)` | pixel coordinates, origin top-left, y down |
+| `θ` | grasp (closing-direction) angle, counter-clockwise on screen, in [−90°, 90°) |
+| `w` | gripper opening (px); `h` jaw size (px) |
+| `d = (cos θ, −sin θ)` | unit closing direction in image coordinates |
+| `c₁, c₂` | contact points `(x, y) ∓ (w/2)·d` |
+| `Q, W` | quality and normalised width maps; `Q̃` smoothed quality |
+| `M` | 2 × 3 affine, original → network pixels; `s` scale, `R(α)` rotation, `F` mirror |
+| `S, L, z` | network size (224), crop side (288), zoom factor |
+| `J(P, G)` | IoU of rectangles P and G; `Δθ` angle difference modulo π |
+| `ℓ_β` | Smooth-L1 loss with β = 1 |
+| `η` | learning rate; `m, v` Adam moments |
+
+## Appendix C — Directory and module reference
+
+```
+configs/            default.yaml, experiment_configs/*.yaml, local.example.yaml (local.yaml ignored)
+src/grasp_planner/
+  config.py         YAML loading, dataset-root resolution
+  pipeline.py       config -> samples/datasets/model/checkpoint glue
+  data/             cornell.py (parse), grasp.py (geometry), transforms.py (affine),
+                    dataset.py (targets, torch Dataset), splits.py
+  models/           ggcnn.py, grconvnet.py, heads.py, __init__ (factory)
+  training/         losses.py, trainer.py
+  evaluation/       metrics.py, runner.py
+  inference/        decode.py, predictor.py
+  visualization/    plots.py
+  utils/            seeding, device, environment info, logging
+scripts/            inspect_dataset, make_splits, visualize_targets, train, run_experiments,
+                    evaluate, summarize_results, make_report_figures, predict, check_report
+app/                app.py (Gradio), app_config.yaml
+tests/              unit + integration tests (pytest)
+experiments/        splits/*.json, results/*.json|csv|md (committed); figures/ (ignored)
+docs/               this report, supporting docs, figures/
+outputs/            runs/, logs/, cache/, predictions/ (ignored)
+```
+
+## Appendix D — Experiment table
+
+| Run | Config | Split file | Best epoch | Val top-1 | Test top-1 | Checkpoint SHA-256 (16) |
+|---|---|---|---|---|---|---|
+| grconvnet_rgbd_image | `configs/experiment_configs/grconvnet_rgbd_image.yaml` | image_wise_seed42 | 85 | 93.2 % | 88.6 % | 23fda02a829da78c |
+| ggcnn_rgbd_image | `ggcnn_rgbd_image.yaml` | image_wise_seed42 | 44 | 88.0 % | 84.8 % | 46c1d0d0cac203fe |
+| grconvnet_rgb_image | `grconvnet_rgb_image.yaml` | image_wise_seed42 | 49 | 90.2 % | 90.2 % | 0d6788f22496b7fc |
+| grconvnet_rgbd_block | `grconvnet_rgbd_block.yaml` | block_wise_seed42 | 18 | 80.3 % | 75.9 % | 0e751622407536d9 |
+| ggcnn_rgbd_block | `ggcnn_rgbd_block.yaml` | block_wise_seed42 | 19 | 73.8 % | 78.4 % | cc729a615867f5f9 |
+
+Smoke tests are listed in `docs/experiment_log.md` and are excluded from this table.
+
+## Appendix E — Further prediction examples
+
+![RGB-only model, test split](figures/qualitative_grconvnet_rgb_image_test.png)
+*Figure E.1 — RGB-only GR-ConvNet on random test successes and failures (same rendering as
+Figure 9.3). This is the model the app uses when no depth file is uploaded.*
+
+Per-image overlays for every run and split (six successes and six failures each) are
+regenerated by `scripts/evaluate.py` into `experiments/figures/<run>/<split>/`.
+
+## Appendix F — Glossary
+
+* **Antipodal grasp:** two contacts on opposite sides of an object, with the closing line
+  through both.
+* **AMP:** automatic mixed precision (fp16 compute with fp32 master weights).
+* **Augmentation:** random, label-consistent transformations of training samples.
+* **Checkpoint:** saved model (and optimiser) state.
+* **Dense prediction:** an output value for every input pixel.
+* **Early stopping:** stopping training when validation performance stops improving.
+* **IoU / Jaccard index:** intersection area over union area.
+* **McNemar test:** a paired test of two classifiers on the same items, using only the items
+  where they disagree.
+* **NMS:** non-maximum suppression, removing near-duplicate detections.
+* **Object-wise / image-wise split:** held-out objects vs held-out images.
+* **Rectangle metric:** the Cornell success criterion (IoU > 0.25, Δθ < 30°).
+* **Wilson interval:** a confidence interval for a proportion that behaves well near 0 and 1.
+
+## Appendix G — References
+
+See `docs/references.md` (verified bibliographic details and the published Cornell results
+table).
+
+## Appendix H — Chapter-to-source map
+
+| Chapter | Files |
+|---|---|
+| 2 Problem formulation | `data/grasp.py` |
+| 3 Data | `data/cornell.py`, `data/transforms.py`, `data/dataset.py`, `data/splits.py`, `scripts/inspect_dataset.py`, `scripts/make_splits.py`, `scripts/visualize_targets.py` |
+| 4 Mathematics | `models/*`, `training/losses.py`, `training/trainer.py`, `data/grasp.py`, `inference/decode.py` |
+| 5 Architecture | `models/grconvnet.py`, `models/ggcnn.py`, `models/heads.py` |
+| 6 Code walkthrough | all of `src/grasp_planner/` |
+| 7 Training | `training/trainer.py`, `scripts/train.py`, `scripts/run_experiments.py`, `configs/` |
+| 8 Decoding | `inference/decode.py`, `inference/predictor.py` |
+| 9 Evaluation | `evaluation/metrics.py`, `evaluation/runner.py`, `scripts/evaluate.py`, `scripts/summarize_results.py`, `scripts/make_report_figures.py` |
+| 10 App | `app/app.py`, `visualization/plots.py` |
+| 12 Reproduction | `README.md`, `requirements.txt`, `pyproject.toml` |

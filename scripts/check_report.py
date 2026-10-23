@@ -20,7 +20,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 SRC_RE = re.compile(r"<!-- src: (?P<path>[^ ]+) -->\s*```[a-z]*\n(?P<code>.*?)```", re.S)
-NUM_RE = re.compile(r"<!-- num: (?P<file>[^:]+):(?P<key>[^: ]+)(?::(?P<fmt>[^ ]+))? -->(?P<val>[^\s|,;)]+)")
+NUM_RE = re.compile(r"<!-- num: (?P<file>[^:]+):(?P<key>[^: ]+)(?::(?P<fmt>[^ ]+))? -->(?P<val>[^\s|,;)*]+)")
 
 
 def chunks(code: str) -> list[list[str]]:

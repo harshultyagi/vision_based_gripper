@@ -1,0 +1,145 @@
+{
+  "intervals": [
+    {
+      "run": "ggcnn_rgbd_block",
+      "split": "val",
+      "k": 90,
+      "n": 122,
+      "top1": 0.7377049180327869,
+      "ci_low": 0.65325181942522,
+      "ci_high": 0.8076455709547689
+    },
+    {
+      "run": "ggcnn_rgbd_block",
+      "split": "test",
+      "k": 91,
+      "n": 116,
+      "top1": 0.7844827586206896,
+      "ci_low": 0.7011843141131845,
+      "ci_high": 0.8495432939792168
+    },
+    {
+      "run": "ggcnn_rgbd_image",
+      "split": "val",
+      "k": 117,
+      "n": 133,
+      "top1": 0.8796992481203008,
+      "ci_low": 0.8135022224778046,
+      "ci_high": 0.9245781869660403
+    },
+    {
+      "run": "ggcnn_rgbd_image",
+      "split": "test",
+      "k": 112,
+      "n": 132,
+      "top1": 0.8484848484848485,
+      "ci_low": 0.7775349120222191,
+      "ci_high": 0.899725187785701
+    },
+    {
+      "run": "grconvnet_rgb_image",
+      "split": "val",
+      "k": 120,
+      "n": 133,
+      "top1": 0.9022556390977443,
+      "ci_low": 0.8399415739880198,
+      "ci_high": 0.9419851964128849
+    },
+    {
+      "run": "grconvnet_rgb_image",
+      "split": "test",
+      "k": 119,
+      "n": 132,
+      "top1": 0.9015151515151515,
+      "ci_low": 0.8387827988487433,
+      "ci_high": 0.9415386204951646
+    },
+    {
+      "run": "grconvnet_rgbd_block",
+      "split": "val",
+      "k": 98,
+      "n": 122,
+      "top1": 0.8032786885245902,
+      "ci_low": 0.7239527933719785,
+      "ci_high": 0.8640887046990418
+    },
+    {
+      "run": "grconvnet_rgbd_block",
+      "split": "test",
+      "k": 88,
+      "n": 116,
+      "top1": 0.7586206896551724,
+      "ci_low": 0.6732697464950692,
+      "ci_high": 0.8273917154071138
+    },
+    {
+      "run": "grconvnet_rgbd_image",
+      "split": "val",
+      "k": 124,
+      "n": 133,
+      "top1": 0.9323308270676691,
+      "ci_low": 0.8763949720119477,
+      "ci_high": 0.9639936129983706
+    },
+    {
+      "run": "grconvnet_rgbd_image",
+      "split": "test",
+      "k": 117,
+      "n": 132,
+      "top1": 0.8863636363636364,
+      "ci_low": 0.820960831557038,
+      "ci_high": 0.9299144964908732
+    }
+  ],
+  "paired_tests": [
+    {
+      "split": "val",
+      "a": "grconvnet_rgbd_image",
+      "b": "ggcnn_rgbd_image",
+      "a_only": 12,
+      "b_only": 5,
+      "p_value": 0.143463134765625
+    },
+    {
+      "split": "test",
+      "a": "grconvnet_rgbd_image",
+      "b": "ggcnn_rgbd_image",
+      "a_only": 11,
+      "b_only": 6,
+      "p_value": 0.332305908203125
+    },
+    {
+      "split": "val",
+      "a": "grconvnet_rgbd_block",
+      "b": "ggcnn_rgbd_block",
+      "a_only": 14,
+      "b_only": 6,
+      "p_value": 0.11531829833984375
+    },
+    {
+      "split": "test",
+      "a": "grconvnet_rgbd_block",
+      "b": "ggcnn_rgbd_block",
+      "a_only": 8,
+      "b_only": 11,
+      "p_value": 0.6476058959960938
+    },
+    {
+      "split": "val",
+      "a": "grconvnet_rgbd_image",
+      "b": "grconvnet_rgb_image",
+      "a_only": 9,
+      "b_only": 5,
+      "p_value": 0.4239501953125
+    },
+    {
+      "split": "test",
+      "a": "grconvnet_rgbd_image",
+      "b": "grconvnet_rgb_image",
+      "a_only": 7,
+      "b_only": 9,
+      "p_value": 0.803619384765625
+    }
+  ],
+  "method": "Wilson score 95% CI; exact two-sided McNemar (binomial on discordant pairs)"
+}

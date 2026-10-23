@@ -12,8 +12,14 @@
     "val_angle_err_deg": 20.647013065074713,
     "val_width_err_px": 18.906765399927277,
     "val_n": 122,
-    "latency_fwd_ms": 1.1481000110507011,
-    "latency_total_ms": 3.4627499990165234
+    "latency_fwd_ms": 1.1580499995034188,
+    "latency_total_ms": 3.110449993982911,
+    "test_top1": 0.7844827586206896,
+    "test_top5": 0.9137931034482759,
+    "test_center_err_px": 9.881410911725274,
+    "test_angle_err_deg": 17.171996774338425,
+    "test_width_err_px": 14.752830807619613,
+    "test_n": 116
   },
   {
     "run": "ggcnn_rgbd_image",
@@ -28,8 +34,14 @@
     "val_angle_err_deg": 15.518826730415277,
     "val_width_err_px": 14.030416450591108,
     "val_n": 133,
-    "latency_fwd_ms": 1.1455999920144677,
-    "latency_total_ms": 3.112550009973347
+    "latency_fwd_ms": 1.1883499973919243,
+    "latency_total_ms": 3.0546499765478075,
+    "test_top1": 0.8484848484848485,
+    "test_top5": 0.9318181818181818,
+    "test_center_err_px": 8.700731306397657,
+    "test_angle_err_deg": 16.818306178356252,
+    "test_width_err_px": 13.966018806858443,
+    "test_n": 132
   },
   {
     "run": "grconvnet_rgb_image",
@@ -44,8 +56,14 @@
     "val_angle_err_deg": 12.61572505999368,
     "val_width_err_px": 20.107113370127475,
     "val_n": 133,
-    "latency_fwd_ms": 3.660749993287027,
-    "latency_total_ms": 5.515100026968867
+    "latency_fwd_ms": 3.865350008709356,
+    "latency_total_ms": 5.759449995821342,
+    "test_top1": 0.9015151515151515,
+    "test_top5": 0.9772727272727273,
+    "test_center_err_px": 8.131454358206657,
+    "test_angle_err_deg": 12.886435288245641,
+    "test_width_err_px": 20.037524025166014,
+    "test_n": 132
   },
   {
     "run": "grconvnet_rgbd_block",
@@ -60,8 +78,14 @@
     "val_angle_err_deg": 16.496963134608176,
     "val_width_err_px": 22.081311294667028,
     "val_n": 122,
-    "latency_fwd_ms": 3.7677499931305647,
-    "latency_total_ms": 5.61444996856153
+    "latency_fwd_ms": 3.7192000017967075,
+    "latency_total_ms": 5.478249950101599,
+    "test_top1": 0.7586206896551724,
+    "test_top5": 0.9051724137931034,
+    "test_center_err_px": 11.677311173079056,
+    "test_angle_err_deg": 18.356646400947422,
+    "test_width_err_px": 16.585702583070663,
+    "test_n": 116
   },
   {
     "run": "grconvnet_rgbd_image",
@@ -76,7 +100,13 @@
     "val_angle_err_deg": 14.230108353386127,
     "val_width_err_px": 16.672268783495348,
     "val_n": 133,
-    "latency_fwd_ms": 3.6997999995946884,
-    "latency_total_ms": 5.683300027158111
+    "latency_fwd_ms": 3.741849970538169,
+    "latency_total_ms": 5.798099999083206,
+    "test_top1": 0.8863636363636364,
+    "test_top5": 0.9545454545454546,
+    "test_center_err_px": 8.42459550590849,
+    "test_angle_err_deg": 15.0396081557198,
+    "test_width_err_px": 19.161448480743232,
+    "test_n": 132
   }
 ]

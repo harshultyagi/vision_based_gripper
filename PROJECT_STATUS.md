@@ -1,11 +1,77 @@
 # PROJECT_STATUS — hand-off record
 
-_Last updated: 2026-10-23 (session 1, in progress)_
+_Last updated: 2026-10-23, end of session 1._
 
 ## Current state
-- Phase 1 (inspection) done. Phase 2–3 code written; environment install in progress.
-- Project is its own git repo (the parent folder `C:\Users\harsh` is an unrelated repo — do not commit there).
+**All 13 acceptance criteria are met.** The pipeline is complete: data → splits → five fully
+trained models → one-time test evaluation → CLI + Gradio app → report. Nothing is half-finished.
 
-## Next actions
-1. Finish venv install, run `scripts/inspect_dataset.py`, `scripts/make_splits.py`.
-2. Run the test suite, smoke test, then full training runs (see PROJECT_ROADMAP.md).
+## Completed milestones
+1. Inspection: environment, GPU, dataset (885 scenes, all usable; 1 NaN rectangle rejected).
+2. Data pipeline + splits (`experiments/splits/*.json`) + crop chosen from train only.
+3. Models: GG-CNN (70,196 params), GR-ConvNet (1,900,900 params).
+4. Smoke tests, then five full background runs (all finished, logs end in `TRAINING FINISHED`).
+5. Validation comparison → selection frozen and committed → single test evaluation.
+6. `scripts/predict.py` and `app/app.py` verified with real checkpoints.
+7. Tests and lint pass. Clean-clone reproduction checked (see below).
+8. Report (`docs/technical_report.md`) and all docs written; `scripts/check_report.py` passes.
+
+## Architecture and config
+* Input: RGB-D (depth, R, G, B), fixed crop (304, 275, side 288) → 224 × 224.
+* Model: GR-ConvNet; outputs quality, cos 2θ, sin 2θ, width maps; Smooth-L1 loss.
+* Training: Adam 1e-3, cosine to 1e-5, batch 8, ≤ 100 epochs, AMP, patience 30, seed 42.
+* All settings: `configs/default.yaml` + `configs/experiment_configs/*.yaml`.
+
+## Dataset path
+Not stored in the repo. It is set in `configs/local.yaml` (git-ignored; template
+`configs/local.example.yaml`) or the env var `GRASP_DATASET_ROOT`. This machine has a
+`configs/local.yaml` pointing at the local Cornell copy.
+
+## Best checkpoint
+`outputs/runs/grconvnet_rgbd_image/checkpoints/best.pt` (epoch 85, SHA-256 prefix
+`23fda02a829da78c`, 22.9 MB, **not in Git**). RGB-only model:
+`outputs/runs/grconvnet_rgb_image/checkpoints/best.pt` (epoch 49).
+Load with:
+```python
+from grasp_planner.inference.predictor import GraspPredictor
+p = GraspPredictor("outputs/runs/grconvnet_rgbd_image/checkpoints/best.pt")
+result = p.predict(rgb_uint8_hw3, depth_metres_hw)   # result.candidates, result.best
+```
+Back these files up if they matter: they exist only on this laptop.
+
+## Latest measured results (test split, once)
+| Run | Test top-1 | Test top-5 |
+|---|---|---|
+| grconvnet_rgbd_image (final) | 88.6 % | 95.5 % |
+| ggcnn_rgbd_image | 84.8 % | 93.2 % |
+| grconvnet_rgb_image | 90.2 % | 97.7 % |
+| grconvnet_rgbd_block | 75.9 % | 90.5 % |
+| ggcnn_rgbd_block | 78.4 % | 91.4 % |
+No pairwise difference is statistically significant (`experiments/results/statistics.json`).
+**The test split has now been used. Do not tune anything on it.** Any new experiment must be
+selected on validation, and the test numbers above must be reported as already seen.
+
+## Tests
+* `python -m pytest -q` → 60 passed (unit, integration on synthetic scenes, real-dataset
+  discovery, app error handling).
+* `python -m ruff check src scripts tests app` → clean.
+* `python scripts/check_report.py` → all code snippets and tagged numbers match.
+* Clean clone + fresh venv + `pip install` + pytest: see "Clean-environment check" below.
+
+## Known issues / caveats
+* No true object-wise split (no `z.txt`). The block split is approximate.
+* Single seed per configuration. Bit-exact reruns are not guaranteed (cuDNN non-determinism).
+* Quality scores can exceed 1 (no output activation) and are not calibrated.
+* `experiments/figures/` (per-image overlays) is git-ignored. Regenerate with `scripts/evaluate.py`.
+
+## Git
+Branch `main` in `C:\Users\harsh\work\VisionBasedGripper` (its own repository; the parent folder
+`C:\Users\harsh` is an unrelated repository — never commit there). Remote `origin` =
+https://github.com/harshultyagi/vision_based_gripper. See the final section for push status.
+
+## Prioritised next actions
+1. Obtain Cornell's `z.txt` (needs the owner's approval to download) → add a true object-wise
+   split (`data/splits.py`) → retrain and re-evaluate.
+2. 3–5 seeds or 5-fold cross-validation for confidence intervals on the model comparison.
+3. Back-project the selected grasp to 3-D using depth and camera intrinsics.
+4. Test-time augmentation; then Jacquard / cluttered datasets.

@@ -38,6 +38,64 @@ def fmt(v, pct=False, nd=1):
     return f"{100 * v:.{nd}f}%" if pct else f"{v:.{nd}f}"
 
 
+PAIRS = [  # (A, B) compared on the same split's images
+    ("grconvnet_rgbd_image", "ggcnn_rgbd_image"),
+    ("grconvnet_rgbd_block", "ggcnn_rgbd_block"),
+    ("grconvnet_rgbd_image", "grconvnet_rgb_image"),
+]
+
+
+def wilson(k: int, n: int, z: float = 1.959964) -> tuple[float, float]:
+    """95% Wilson score interval for a binomial proportion k/n."""
+    p = k / n
+    den = 1 + z**2 / n
+    centre = (p + z**2 / (2 * n)) / den
+    half = z * ((p * (1 - p) / n + z**2 / (4 * n**2)) ** 0.5) / den
+    return centre - half, centre + half
+
+
+def per_image_success(run: str, split: str) -> dict[str, bool] | None:
+    f = RES / f"{run}__{split}_per_image.csv"
+    if not f.exists():
+        return None
+    with f.open(encoding="utf-8") as fh:
+        return {r["sample_id"]: r["top1_success"] == "True" for r in csv.DictReader(fh)}
+
+
+def statistics(rows: list[dict]) -> dict:
+    """Wilson CIs per run/split and exact McNemar tests between paired runs."""
+    from scipy.stats import binomtest
+
+    intervals, tests = [], []
+    for r in rows:
+        for split in ("val", "test"):
+            s = per_image_success(r["run"], split)
+            if s is None:
+                continue
+            k, n = sum(s.values()), len(s)
+            lo, hi = wilson(k, n)
+            intervals.append(
+                {"run": r["run"], "split": split, "k": k, "n": n, "top1": k / n, "ci_low": lo, "ci_high": hi}
+            )
+    for a, b in PAIRS:
+        for split in ("val", "test"):
+            sa, sb = per_image_success(a, split), per_image_success(b, split)
+            if sa is None or sb is None or set(sa) != set(sb):
+                continue
+            a_only = sum(sa[i] and not sb[i] for i in sa)
+            b_only = sum(sb[i] and not sa[i] for i in sa)
+            n_disc = a_only + b_only
+            p = binomtest(a_only, n_disc, 0.5).pvalue if n_disc else 1.0
+            tests.append(
+                {"split": split, "a": a, "b": b, "a_only": a_only, "b_only": b_only, "p_value": float(p)}
+            )
+    return {
+        "intervals": intervals,
+        "paired_tests": tests,
+        "method": "Wilson score 95% CI; exact two-sided McNemar (binomial on discordant pairs)",
+    }
+
+
 def main() -> None:
     rows = []
     histories: dict[str, dict[str, list[dict]]] = {"image": {}, "block": {}}
@@ -102,6 +160,33 @@ def main() -> None:
             ]
             lines.append("| " + " | ".join(str(c) for c in cells) + " |")
         lines.append("")
+    stats = statistics(rows)
+    (RES / "statistics.json").write_text(json.dumps(stats, indent=2), encoding="utf-8")
+    lines += [
+        "## Uncertainty (top-1)",
+        "",
+        "95% Wilson score intervals:",
+        "",
+        "| run | split | top-1 | 95% CI |",
+        "|---|---|---|---|",
+    ]
+    for s in stats["intervals"]:
+        lines.append(
+            f"| {s['run']} | {s['split']} | {fmt(s['top1'], True)} "
+            f"| {fmt(s['ci_low'], True)} – {fmt(s['ci_high'], True)} |"
+        )
+    lines += [
+        "",
+        "Paired exact McNemar tests (same images, discordant pairs only):",
+        "",
+        "| split | A | B | A only correct | B only correct | p-value |",
+        "|---|---|---|---|---|---|",
+    ]
+    for t in stats["paired_tests"]:
+        lines.append(
+            f"| {t['split']} | {t['a']} | {t['b']} | {t['a_only']} | {t['b_only']} | {t['p_value']:.3f} |"
+        )
+    lines.append("")
     (RES / "model_comparison.md").write_text("\n".join(lines), encoding="utf-8")
     print("\n".join(lines))
     for kind, h in histories.items():
