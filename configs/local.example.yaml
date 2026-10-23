@@ -1,0 +1,5 @@
+# Copy this file to configs/local.yaml (git-ignored) and set the path to YOUR local copy of the
+# Cornell Grasping Dataset. The folder must contain the numbered sub-folders 01 ... 10, each
+# holding pcdXXXXr.png, pcdXXXXd.tiff, pcdXXXXcpos.txt and pcdXXXXcneg.txt files.
+# Alternatively set the environment variable GRASP_DATASET_ROOT (it takes precedence).
+dataset_root: "C:/path/to/Cornell data set"

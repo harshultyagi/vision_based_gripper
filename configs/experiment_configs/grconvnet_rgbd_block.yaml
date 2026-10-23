@@ -1,0 +1,8 @@
+base: configs/default.yaml
+experiment:
+  name: grconvnet_rgbd_block
+data:
+  modality: rgbd
+  split_file: experiments/splits/block_wise_seed42.json
+model:
+  name: grconvnet

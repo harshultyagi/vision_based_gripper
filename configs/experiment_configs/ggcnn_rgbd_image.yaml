@@ -1,0 +1,8 @@
+base: configs/default.yaml
+experiment:
+  name: ggcnn_rgbd_image
+data:
+  modality: rgbd
+  split_file: experiments/splits/image_wise_seed42.json
+model:
+  name: ggcnn

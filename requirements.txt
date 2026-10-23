@@ -1,0 +1,16 @@
+# Install PyTorch FIRST from the official index that matches your CUDA driver, e.g.
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
+# (a plain `pip install torch` on Windows usually installs the CPU-only build).
+numpy>=1.26
+scipy>=1.11
+opencv-python>=4.9
+pillow>=10.0
+tifffile>=2024.1.0
+pyyaml>=6.0
+shapely>=2.0
+matplotlib>=3.8
+tqdm>=4.66
+gradio>=4.44
+# development
+pytest>=8.0
+ruff>=0.6

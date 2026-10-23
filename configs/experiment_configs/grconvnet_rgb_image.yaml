@@ -1,0 +1,8 @@
+base: configs/default.yaml
+experiment:
+  name: grconvnet_rgb_image
+data:
+  modality: rgb
+  split_file: experiments/splits/image_wise_seed42.json
+model:
+  name: grconvnet

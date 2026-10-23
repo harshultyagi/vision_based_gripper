@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "grasp_planner"
+version = "1.0.0"
+description = "Vision-based planar grasp planner (GG-CNN / GR-ConvNet) trained on the Cornell Grasping Dataset"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "opencv-python>=4.9",
+    "pillow>=10.0",
+    "tifffile>=2024.1.0",
+    "pyyaml>=6.0",
+    "shapely>=2.0",
+    "matplotlib>=3.8",
+    "tqdm>=4.66",
+]
+
+[project.optional-dependencies]
+app = ["gradio>=4.44"]
+dev = ["pytest>=8.0", "ruff>=0.6"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "dataset: tests that need the real Cornell dataset (skipped if not configured)",
+    "integration: slower end-to-end tests",
+]
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "NPY"]
+ignore = ["E741"]

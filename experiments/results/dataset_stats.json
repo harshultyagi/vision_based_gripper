@@ -1,0 +1,213 @@
+{
+  "dataset_root_name": "Cornell data set",
+  "folders": {
+    "01": {
+      "pointcloud.txt": 100,
+      "cneg.txt": 100,
+      "cpos.txt": 100,
+      "d.tiff": 100,
+      "r.png": 100
+    },
+    "02": {
+      "pointcloud.txt": 100,
+      "cneg.txt": 100,
+      "cpos.txt": 100,
+      "d.tiff": 100,
+      "r.png": 100
+    },
+    "03": {
+      "pointcloud.txt": 100,
+      "cneg.txt": 100,
+      "cpos.txt": 100,
+      "d.tiff": 100,
+      "r.png": 100
+    },
+    "04": {
+      "pointcloud.txt": 100,
+      "cneg.txt": 100,
+      "cpos.txt": 100,
+      "d.tiff": 100,
+      "r.png": 100
+    },
+    "05": {
+      "pointcloud.txt": 100,
+      "cneg.txt": 100,
+      "cpos.txt": 100,
+      "d.tiff": 100,
+      "r.png": 100
+    },
+    "06": {
+      "pointcloud.txt": 100,
+      "cneg.txt": 100,
+      "cpos.txt": 100,
+      "d.tiff": 100,
+      "r.png": 100
+    },
+    "07": {
+      "pointcloud.txt": 100,
+      "cneg.txt": 100,
+      "cpos.txt": 100,
+      "d.tiff": 100,
+      "r.png": 100
+    },
+    "08": {
+      "pointcloud.txt": 100,
+      "cneg.txt": 100,
+      "cpos.txt": 100,
+      "d.tiff": 100,
+      "r.png": 100
+    },
+    "09": {
+      "pointcloud.txt": 50,
+      "cneg.txt": 50,
+      "cpos.txt": 50,
+      "d.tiff": 50,
+      "r.png": 50
+    },
+    "10": {
+      "pointcloud.txt": 35,
+      "cneg.txt": 35,
+      "cpos.txt": 35,
+      "d.tiff": 35,
+      "r.png": 35
+    },
+    "backgrounds": {
+      "r.png": 11
+    }
+  },
+  "num_scene_folders": 10,
+  "num_background_images": 11,
+  "num_usable_scenes": 885,
+  "num_excluded_scenes": 0,
+  "num_scenes_with_depth": 885,
+  "image_sizes": {
+    "640x480x3": 885
+  },
+  "scene_id_range": [
+    "0100",
+    "1034"
+  ],
+  "positive_rectangles": {
+    "total": 5110,
+    "per_scene": {
+      "count": 885,
+      "mean": 5.7740112994350286,
+      "std": 3.2446047803489546,
+      "min": 2.0,
+      "p5": 2.200000000000003,
+      "median": 5.0,
+      "p95": 12.799999999999955,
+      "max": 25.0
+    }
+  },
+  "negative_rectangles": {
+    "total": 2909,
+    "per_scene": {
+      "count": 885,
+      "mean": 3.287005649717514,
+      "std": 0.8695089626486162,
+      "min": 0.0,
+      "p5": 2.0,
+      "median": 3.0,
+      "p95": 5.0,
+      "max": 7.0
+    }
+  },
+  "rejected_rectangles": 1,
+  "positive_grasp_width_px": {
+    "count": 5110,
+    "mean": 49.71361098344112,
+    "std": 22.820598981589434,
+    "min": 3.1622776601683795,
+    "p5": 18.839730402650986,
+    "median": 47.172296555114016,
+    "p95": 89.54276518035786,
+    "max": 149.0
+  },
+  "positive_grasp_jaw_size_px": {
+    "count": 5110,
+    "mean": 29.166706530063294,
+    "std": 11.88552335236498,
+    "min": 3.736308338453903,
+    "p5": 15.006300000000005,
+    "median": 27.018512172212592,
+    "p95": 50.15974481593781,
+    "max": 120.42605466011082
+  },
+  "positive_grasp_angle_deg": {
+    "count": 5110,
+    "mean": 4.942630180344132,
+    "std": 52.82546216981765,
+    "min": -90.0,
+    "p5": -84.52649088641896,
+    "median": -1.7655266244584062,
+    "p95": 86.08703611404484,
+    "max": 89.46965581336502
+  },
+  "positive_grasp_center_x": {
+    "count": 5110,
+    "mean": 302.0399217221135,
+    "std": 33.495534813465156,
+    "min": 167.0,
+    "p5": 245.5,
+    "median": 304.5,
+    "p95": 355.0,
+    "max": 428.5
+  },
+  "positive_grasp_center_y": {
+    "count": 5110,
+    "mean": 272.97304315068493,
+    "std": 40.18235488891598,
+    "min": 102.537375,
+    "p5": 204.9901,
+    "median": 274.01250000000005,
+    "p95": 337.71595,
+    "max": 421.5105
+  },
+  "positive_vertex_bbox": {
+    "x_min": 152.0,
+    "x_max": 452.0,
+    "y_min": 80.0745,
+    "y_max": 453.0
+  },
+  "depth": {
+    "checked_scenes": 885,
+    "dtype": [
+      "float32"
+    ],
+    "shape": [
+      "(480, 640)"
+    ],
+    "invalid_pixel_fraction": {
+      "count": 885,
+      "mean": 0.00011258606991525423,
+      "std": 1.7195945697769153e-05,
+      "min": 5.859375e-05,
+      "p5": 8.138020833333333e-05,
+      "median": 0.00011393229166666667,
+      "p95": 0.00013997395833333334,
+      "max": 0.00015950520833333333
+    },
+    "min_depth": {
+      "count": 885,
+      "mean": 0.3400756689114759,
+      "std": 0.010396958677417217,
+      "min": 0.30224981904029846,
+      "p5": 0.3051116466522217,
+      "median": 0.34494516253471375,
+      "p95": 0.34628432989120483,
+      "max": 0.34962064027786255
+    },
+    "max_depth": {
+      "count": 885,
+      "mean": 2.0653267675873925,
+      "std": 0.1958090478849921,
+      "min": 1.9766706228256226,
+      "p5": 1.9812372922897339,
+      "median": 1.9902929067611694,
+      "p95": 2.7695934772491455,
+      "max": 2.7953920364379883
+    }
+  },
+  "object_identity": "not available: the local copy has no object-ID mapping file (z.txt)"
+}

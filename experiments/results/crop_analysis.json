@@ -1,0 +1,125 @@
+{
+ "source": "image-wise train split only",
+ "median_train_grasp_centre": [
+  304.0,
+  275.0
+ ],
+ "chosen_crop": {
+  "cx": 304.0,
+  "cy": 275.0,
+  "size": 288
+ },
+ "rule": "smallest multiple of 16 px with >= 99% of train positive vertices inside",
+ "train_coverage_by_side": {
+  "160": {
+   "vertex_fraction": 0.8874611691612538,
+   "rectangle_fraction": 0.7963852019203614,
+   "scenes_with_at_least_one_full_rectangle": 0.9193548387096774
+  },
+  "176": {
+   "vertex_fraction": 0.9192318554080768,
+   "rectangle_fraction": 0.8514543914148546,
+   "scenes_with_at_least_one_full_rectangle": 0.9354838709677419
+  },
+  "192": {
+   "vertex_fraction": 0.9406241174809375,
+   "rectangle_fraction": 0.8909912454109009,
+   "scenes_with_at_least_one_full_rectangle": 0.9483870967741935
+  },
+  "208": {
+   "vertex_fraction": 0.957709686529229,
+   "rectangle_fraction": 0.9209262920079073,
+   "scenes_with_at_least_one_full_rectangle": 0.9596774193548387
+  },
+  "224": {
+   "vertex_fraction": 0.9698531488280147,
+   "rectangle_fraction": 0.9435187800056481,
+   "scenes_with_at_least_one_full_rectangle": 0.9693548387096774
+  },
+  "240": {
+   "vertex_fraction": 0.9790313470770968,
+   "rectangle_fraction": 0.9598983338040101,
+   "scenes_with_at_least_one_full_rectangle": 0.9806451612903225
+  },
+  "256": {
+   "vertex_fraction": 0.9848206721265179,
+   "rectangle_fraction": 0.9689353290031064,
+   "scenes_with_at_least_one_full_rectangle": 0.9870967741935484
+  },
+  "272": {
+   "vertex_fraction": 0.989409771251059,
+   "rectangle_fraction": 0.9757130754024287,
+   "scenes_with_at_least_one_full_rectangle": 0.9935483870967742
+  },
+  "288": {
+   "vertex_fraction": 0.994140073425586,
+   "rectangle_fraction": 0.9844676645015532,
+   "scenes_with_at_least_one_full_rectangle": 0.9983870967741936
+  },
+  "304": {
+   "vertex_fraction": 0.996469923750353,
+   "rectangle_fraction": 0.9901157865009884,
+   "scenes_with_at_least_one_full_rectangle": 1.0
+  },
+  "320": {
+   "vertex_fraction": 0.9980937588251906,
+   "rectangle_fraction": 0.994069471900593,
+   "scenes_with_at_least_one_full_rectangle": 1.0
+  },
+  "336": {
+   "vertex_fraction": 0.9995763908500424,
+   "rectangle_fraction": 0.9985879695001412,
+   "scenes_with_at_least_one_full_rectangle": 1.0
+  },
+  "352": {
+   "vertex_fraction": 0.9997881954250212,
+   "rectangle_fraction": 0.9994351878000565,
+   "scenes_with_at_least_one_full_rectangle": 1.0
+  },
+  "368": {
+   "vertex_fraction": 0.9999293984750071,
+   "rectangle_fraction": 0.9997175939000282,
+   "scenes_with_at_least_one_full_rectangle": 1.0
+  },
+  "384": {
+   "vertex_fraction": 0.9999293984750071,
+   "rectangle_fraction": 0.9997175939000282,
+   "scenes_with_at_least_one_full_rectangle": 1.0
+  },
+  "400": {
+   "vertex_fraction": 1.0,
+   "rectangle_fraction": 1.0,
+   "scenes_with_at_least_one_full_rectangle": 1.0
+  },
+  "416": {
+   "vertex_fraction": 1.0,
+   "rectangle_fraction": 1.0,
+   "scenes_with_at_least_one_full_rectangle": 1.0
+  },
+  "432": {
+   "vertex_fraction": 1.0,
+   "rectangle_fraction": 1.0,
+   "scenes_with_at_least_one_full_rectangle": 1.0
+  },
+  "448": {
+   "vertex_fraction": 1.0,
+   "rectangle_fraction": 1.0,
+   "scenes_with_at_least_one_full_rectangle": 1.0
+  },
+  "464": {
+   "vertex_fraction": 1.0,
+   "rectangle_fraction": 1.0,
+   "scenes_with_at_least_one_full_rectangle": 1.0
+  },
+  "480": {
+   "vertex_fraction": 1.0,
+   "rectangle_fraction": 1.0,
+   "scenes_with_at_least_one_full_rectangle": 1.0
+  }
+ },
+ "chosen_train_coverage": {
+  "vertex_fraction": 0.994140073425586,
+  "rectangle_fraction": 0.9844676645015532,
+  "scenes_with_at_least_one_full_rectangle": 0.9983870967741936
+ }
+}

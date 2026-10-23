@@ -1,0 +1,56 @@
+# Default configuration. Experiment configs in configs/experiment_configs/ set `base:` to this
+# file and override only what differs. The dataset location is NOT stored here: it comes from
+# GRASP_DATASET_ROOT or configs/local.yaml (see configs/local.example.yaml).
+
+experiment:
+  name: default
+  seed: 42
+
+data:
+  split_file: experiments/splits/image_wise_seed42.json
+  modality: rgbd            # rgb | depth | rgbd   (channel order: depth, r, g, b)
+  output_size: 224          # network input / output grid (pixels)
+  crop:                     # fixed crop window in ORIGINAL 640x480 pixels, chosen by
+    cx: 304.0               # scripts/make_splits.py from the image-wise TRAIN split only
+    cy: 275.0               # (see experiments/results/crop_analysis.json)
+    size: 288.0             # 288 -> 224 px: scale 0.778
+  max_width: 150.0          # width-map normaliser, in network-input pixels
+  num_workers: 2            # DataLoader workers (0 = main process; Windows-safe fallback)
+  augment:                  # training split only
+    enabled: true
+    rotation_deg: 180.0     # uniform in [-180, 180]
+    zoom_min: 0.85          # crop side scaled by U(0.85, 1.0) -> objects up to ~18% larger
+    translate_px: 20.0      # crop-centre jitter per axis, original pixels
+    hflip_prob: 0.5
+
+model:
+  name: grconvnet           # grconvnet | ggcnn
+  channels: 32
+  num_residual: 5
+  dropout: 0.1
+
+train:
+  epochs: 100
+  batch_size: 8
+  val_batch_size: 8
+  optimizer: adam
+  lr: 0.001
+  weight_decay: 0.0
+  scheduler: cosine         # cosine | step | none
+  min_lr: 1.0e-5
+  amp: true                 # mixed precision on CUDA
+  grad_clip: 5.0
+  early_stopping_patience: 30   # epochs without val top-1 improvement (0 = off)
+
+decode:
+  q_sigma: 2.0
+  q_threshold: 0.1
+  min_distance: 5
+  max_peaks: 50
+  min_width: 2.0
+  nms_iou: 0.3
+  nms_angle_deg: 30.0
+  max_candidates: 10
+
+eval:
+  k: 5

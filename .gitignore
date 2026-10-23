@@ -1,0 +1,33 @@
+# Environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+build/
+dist/
+.ipynb_checkpoints/
+
+# Local configuration and secrets
+.env
+configs/local.yaml
+
+# Data, checkpoints and large generated outputs
+data/
+outputs/
+*.pt
+*.pth
+*.ckpt
+*.tiff
+*.pcd
+gradio_cached_examples/
+.gradio/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

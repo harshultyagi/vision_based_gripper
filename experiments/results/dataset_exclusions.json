@@ -1,0 +1,9 @@
+{
+  "excluded_scenes": [],
+  "rejected_rectangles": [
+    {
+      "sample_id": "0165",
+      "issue": "cpos rect 2: non-finite coordinate (NaN/inf)"
+    }
+  ]
+}
