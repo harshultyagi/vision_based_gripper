@@ -3,6 +3,7 @@
 Usage:
     python scripts/evaluate.py --run outputs/runs/<name> --split val
     python scripts/evaluate.py --run outputs/runs/<name> --split test   # only after model selection
+    python scripts/evaluate.py --weights models/grconvnet_rgbd_image.pt --split test  # from a clone
 
 Writes:
     experiments/results/<name>__<split>.json           summary metrics + provenance
@@ -60,7 +61,13 @@ def save_examples(samples, results, preds, out_dir: Path, n: int) -> list[str]:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--run", required=True, help="run directory containing checkpoints/best.pt")
+    src = ap.add_mutually_exclusive_group(required=True)
+    src.add_argument("--run", help="run directory containing checkpoints/best.pt")
+    src.add_argument(
+        "--weights",
+        help="a checkpoint file, e.g. models/grconvnet_rgbd_image.pt (results go to outputs/eval/ "
+        "so the committed official results are never overwritten)",
+    )
     ap.add_argument("--split", choices=["val", "test"], default="val")
     ap.add_argument("--checkpoint", default="best.pt")
     ap.add_argument("--figures", type=int, default=6, help="success/failure examples to save (each)")
@@ -68,10 +75,16 @@ def main() -> None:
     ap.add_argument("--k", type=int, default=5)
     args = ap.parse_args()
     setup_logging()
-    run = Path(args.run)
-    if not run.is_absolute():
-        run = REPO_ROOT / run
-    ckpt_path = run / "checkpoints" / args.checkpoint
+    if args.weights:
+        ckpt_path = Path(args.weights)
+        res_dir = REPO_ROOT / "outputs" / "eval"
+        fig_root = res_dir / "figures"
+    else:
+        ckpt_path = Path(args.run) / "checkpoints" / args.checkpoint
+        res_dir = REPO_ROOT / "experiments" / "results"
+        fig_root = REPO_ROOT / "experiments" / "figures"
+    if not ckpt_path.is_absolute():
+        ckpt_path = REPO_ROOT / ckpt_path
     device = select_device(args.device)
     model, ckpt = load_checkpoint_model(ckpt_path, device)
     cfg = ckpt["config"]
@@ -87,7 +100,7 @@ def main() -> None:
             "experiment": name,
             "split": args.split,
             "split_file": cfg["data"]["split_file"],
-            "checkpoint": str(ckpt_path.relative_to(REPO_ROOT)),
+            "checkpoint": ckpt_path.relative_to(REPO_ROOT).as_posix(),
             "checkpoint_sha256_16": sha256(ckpt_path),
             "checkpoint_epoch": ckpt["epoch"],
             "selection_criterion": "best validation top-1 accuracy (ties: lower val loss)",
@@ -97,7 +110,6 @@ def main() -> None:
             "evaluated_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         }
     )
-    res_dir = REPO_ROOT / "experiments" / "results"
     res_dir.mkdir(parents=True, exist_ok=True)
     out = res_dir / f"{name}__{args.split}.json"
     out.write_text(json.dumps(summary, indent=2), encoding="utf-8")
@@ -107,9 +119,7 @@ def main() -> None:
         for r in results:
             w.writerow(r.to_dict())
     if args.figures:
-        save_examples(
-            samples, results, preds, REPO_ROOT / "experiments" / "figures" / name / args.split, args.figures
-        )
+        save_examples(samples, results, preds, fig_root / name / args.split, args.figures)
     print(
         json.dumps(
             {

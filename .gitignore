@@ -35,3 +35,6 @@ Thumbs.db
 
 # Per-image overlays (full-size dataset images; regenerate with scripts/evaluate.py)
 experiments/figures/
+
+# Office lock files
+~$*
