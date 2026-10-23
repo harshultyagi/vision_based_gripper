@@ -19,6 +19,7 @@ configs/local.yaml
 /data/
 /outputs/
 *.pt
+!/models/*.pt
 *.pth
 *.ckpt
 *.tiff

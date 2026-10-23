@@ -10,9 +10,14 @@ Read `PROJECT_STATUS.md` first: it is the hand-off record and says exactly where
    `configs/local.example.yaml`). Never hard-code a machine-specific path in source code.
 2. **The dataset is read-only.** Never move, rename, modify or delete anything inside the
    dataset folder. All derived artefacts go under `outputs/` or `experiments/`.
-3. **Never commit data, checkpoints, virtual environments or secrets.** Checkpoints live in
-   `outputs/` (git-ignored). Only small metric JSON/CSV files and figures used by the report
-   may be committed under `experiments/` and `docs/figures/`.
+3. **Never commit data, training checkpoints, virtual environments or secrets.** Training
+   checkpoints live in `outputs/` (git-ignored). Only small metric JSON/CSV files and figures used
+   by the report may be committed under `experiments/` and `docs/figures/`. **Exception (approved
+   by the owner, 2026-10-23):** the slim inference checkpoints in `models/*.pt` (weights + config,
+   from `scripts/export_slim_checkpoint.py`) are committed so the app and the Hugging Face Space
+   work from a fresh clone. Raw dataset files (images, depth, annotations) never go to GitHub;
+   example scenes are copied into the Space only (`scripts/build_space.py`). Small annotated
+   figures in `docs/figures/` and `docs/presentation/` are allowed.
 4. **Never fabricate results.** Every number in the docs must come from a file produced by a
    script in `scripts/`. If something was not run, say so.
 5. **The test split is touched only by `scripts/evaluate.py --split test`, after model

@@ -52,7 +52,7 @@ No pairwise difference is statistically significant (`experiments/results/statis
 selected on validation, and the test numbers above must be reported as already seen.
 
 ## Tests
-* `python -m pytest -q` → 60 passed (unit, integration on synthetic scenes, real-dataset
+* `python -m pytest -q` → 63 passed (unit, integration on synthetic scenes, real-dataset
   discovery, app error handling).
 * `python -m ruff check src scripts tests app` → clean.
 * `python scripts/check_report.py` → all code snippets and tagged numbers match.
@@ -80,7 +80,15 @@ https://github.com/harshultyagi/vision_based_gripper. **Pushed**: `main` tracks 
 3. Back-project the selected grasp to 3-D using depth and camera intrinsics.
 4. Test-time augmentation; then Jacquard / cluttered datasets.
 
-## Deployment notes (planned: owner wants to host the app later, mentioned Vercel)
+## Deployment status
+* **Hugging Face Space prepared, not published** (the owner has no HF account yet). Target:
+  https://huggingface.co/spaces/btechbillu/Vission-Based-grasper. Build with
+  `scripts/build_space.py`; upload steps are in `docs/deployment.md`. Tested locally on CPU: both
+  models load, and predictions match the GPU run.
+* Slim checkpoints are committed in `models/` (owner-approved exception to the no-checkpoint rule).
+* Presentation: `docs/presentation/Vision_Based_Grasp_Planner.pptx` (7 slides).
+
+## Earlier deployment notes (owner first mentioned Vercel)
 * `app/app.py` is a Gradio app: a long-running Python server that loads PyTorch and a 23 MB
   checkpoint. Vercel's Python support runs short-lived serverless functions with a bundle-size
   limit, and the PyTorch dependency alone is likely to exceed it. **Vercel is probably not a

@@ -26,7 +26,7 @@ Cornell Grasping Dataset.
 * a decoder: peak finding, validity checks, angle-aware NMS, ranking and back-projection;
 * the Cornell rectangle metric;
 * a CLI predictor and a Gradio web app;
-* 60 automated tests;
+* 63 automated tests;
 * this report, whose snippets and numbers are machine-checked against the code and result files.
 
 **Final model.** GR-ConvNet with RGB-D input, selected on validation accuracy, at

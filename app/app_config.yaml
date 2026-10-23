@@ -1,5 +1,7 @@
-# Checkpoints used by app/app.py (paths relative to the repository root; checkpoints are not
-# committed — train them with scripts/train.py or copy them into place).
+# Checkpoints used by app/app.py (paths relative to the repository root).
+# models/*.pt are slim, inference-only copies of the selected checkpoints (weights + config),
+# committed to Git so the app and the Hugging Face Space work from a fresh clone.
+# Regenerate with: python scripts/export_slim_checkpoint.py --run outputs/runs/<run>
 # Chosen on VALIDATION accuracy (see docs/experiment_log.md).
-rgbd_checkpoint: outputs/runs/grconvnet_rgbd_image/checkpoints/best.pt
-rgb_checkpoint: outputs/runs/grconvnet_rgb_image/checkpoints/best.pt
+rgbd_checkpoint: models/grconvnet_rgbd_image.pt
+rgb_checkpoint: models/grconvnet_rgb_image.pt

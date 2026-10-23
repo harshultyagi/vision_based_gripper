@@ -36,6 +36,16 @@ All notable changes. Dates are UTC+5:30 (local).
   now reconfigured to UTF-8.
 - Per-image overlay figures (full-size dataset images, ~23 MB) are no longer committed.
 
+### Deployment (added later on 2026-10-23)
+- `models/*.pt`: slim inference checkpoints (7.3 MB, weights + config) committed with the
+  owner's approval; `app/app_config.yaml` now points to them.
+- `scripts/export_slim_checkpoint.py` (verifies identical outputs) and `scripts/build_space.py`
+  (assembles a Hugging Face Space in `outputs/hf_space/`, CPU-only torch, four test-split example
+  scenes with depth). Guide: `docs/deployment.md`.
+- `app/app.py`: `--host` option (Spaces need 0.0.0.0); examples can include depth TIFFs.
+- Fix: device selection now also requires a visible CUDA device. With `CUDA_VISIBLE_DEVICES=""`
+  PyTorch reported CUDA as available with 0 devices, and checkpoint loading failed.
+
 ### Results
 - Five full training runs and a one-time test evaluation; see `docs/experiment_log.md` and
   `experiments/results/`.

@@ -19,13 +19,19 @@ def seed_everything(seed: int) -> None:
     torch.cuda.manual_seed_all(seed)
 
 
+def cuda_usable() -> bool:
+    """True only if CUDA is available *and* at least one device is visible. (With
+    ``CUDA_VISIBLE_DEVICES=""`` some builds report ``is_available()`` True but 0 devices.)"""
+    return torch.cuda.is_available() and torch.cuda.device_count() > 0
+
+
 def select_device(requested: str = "auto") -> torch.device:
-    """``auto`` -> CUDA if available, else CPU. Raises if CUDA is requested but unavailable."""
+    """``auto`` -> CUDA if usable, else CPU. Raises if CUDA is requested but unusable."""
     if requested == "auto":
-        return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        return torch.device("cuda" if cuda_usable() else "cpu")
     dev = torch.device(requested)
-    if dev.type == "cuda" and not torch.cuda.is_available():
-        raise RuntimeError("CUDA requested but torch.cuda.is_available() is False")
+    if dev.type == "cuda" and not cuda_usable():
+        raise RuntimeError("CUDA requested but no CUDA device is usable")
     return dev
 
 

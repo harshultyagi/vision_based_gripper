@@ -14,6 +14,7 @@ from ..data.grasp import Grasp
 from ..data.transforms import CropSpec, build_affine, inpaint_depth, warp_image
 from ..evaluation.runner import predict_maps
 from ..pipeline import decode_spec, load_checkpoint_model
+from ..utils import select_device
 from .decode import DecodeSpec, decode_grasps, grasp_to_original
 
 
@@ -42,7 +43,7 @@ class GraspPredictor:
     """Loads a trained checkpoint and predicts grasps for single images."""
 
     def __init__(self, checkpoint: str | Path, device: torch.device | None = None):
-        self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device or select_device("auto")
         self.model, ckpt = load_checkpoint_model(Path(checkpoint), self.device)
         self.cfg = ckpt["config"]
         self.checkpoint_epoch = ckpt.get("epoch")

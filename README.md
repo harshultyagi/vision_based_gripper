@@ -14,6 +14,8 @@ are trained and evaluated on the **Cornell Grasping Dataset**: GG-CNN (baseline)
 📘 **Full technical report / textbook:** [`docs/technical_report.md`](docs/technical_report.md)
 
 ## Features
+* Dataset: Cornell Grasping Dataset, Kaggle copy used here:
+  https://www.kaggle.com/datasets/oneoneliu/cornell-grasp
 * Validated Cornell loader: every malformed annotation is reported, none dropped silently.
 * Augmentation where images and grasp labels share one affine transform, so they stay aligned
   by construction.
@@ -24,7 +26,7 @@ are trained and evaluated on the **Cornell Grasping Dataset**: GG-CNN (baseline)
   contact points.
 * Cornell rectangle-metric evaluation, with confidence intervals and paired significance tests.
 * CLI predictor and a Gradio web app.
-* 60 pytest tests. A report checker verifies every code snippet and tagged number in the report.
+* 63 pytest tests. A report checker verifies every code snippet and tagged number in the report.
 
 ## Architecture overview
 
@@ -140,8 +142,21 @@ when a depth TIFF is uploaded, otherwise the RGB-only model:
 .venv\Scripts\python.exe app\app.py
 ```
 
-Checkpoints (about 23 MB each) are not in Git. Train them as above, or copy
-`outputs/runs/<run>/checkpoints/best.pt` from a machine that has them.
+The app uses the slim checkpoints committed in `models/` (7.3 MB each: weights + config, with
+the training state removed), so it works straight after cloning. Full training checkpoints stay in
+`outputs/` and are not in Git.
+
+## Online demo (Hugging Face Space)
+
+Planned at **https://huggingface.co/spaces/btechbillu/Vission-Based-grasper**. It runs on free CPU
+hardware and offers four clickable test-split scenes. The Space is **not published yet**. Build it
+with `scripts/build_space.py` and upload it as described in
+[`docs/deployment.md`](docs/deployment.md). The built folder was tested locally on CPU.
+
+## Presentation
+
+A 7-slide summary deck (methodology, training choices, results, links):
+[`docs/presentation/Vision_Based_Grasp_Planner.pptx`](docs/presentation/Vision_Based_Grasp_Planner.pptx).
 
 ## Repository layout
 

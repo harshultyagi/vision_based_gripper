@@ -185,9 +185,13 @@ def build_ui(app: App):
         btn.click(app.run, [image, depth, k], [out_img, summary, table, files])
         examples_dir = REPO / "app" / "examples"
         if examples_dir.exists():
-            ex = sorted(str(p) for p in examples_dir.glob("*.png"))
-            if ex:
-                gr.Examples([[e] for e in ex], inputs=[image])
+            # pcdXXXXr.png, optionally with its pcdXXXXd.tiff depth (enables the RGB-D model)
+            rows = []
+            for png in sorted(examples_dir.glob("*.png")):
+                tiff = png.with_name(png.name.replace("r.png", "d.tiff"))
+                rows.append([str(png), str(tiff) if tiff.exists() else None])
+            if rows:
+                gr.Examples(rows, inputs=[image, depth], label="Example Cornell test-split scenes")
     return ui
 
 
@@ -196,6 +200,7 @@ def main() -> None:
     ap.add_argument("--checkpoint", default=None, help="RGB-D checkpoint (overrides app_config.yaml)")
     ap.add_argument("--rgb-checkpoint", default=None, help="RGB-only checkpoint (overrides app_config.yaml)")
     ap.add_argument("--port", type=int, default=7860)
+    ap.add_argument("--host", default="127.0.0.1", help="use 0.0.0.0 inside a container / HF Space")
     ap.add_argument("--share", action="store_true")
     args = ap.parse_args()
     if hasattr(sys.stdout, "reconfigure"):  # Windows consoles default to cp1252
@@ -211,7 +216,7 @@ def main() -> None:
         resolve(args.rgb_checkpoint or cfg.get("rgb_checkpoint")),
     )
     print(app.status())
-    build_ui(app).launch(server_name="127.0.0.1", server_port=args.port, share=args.share)
+    build_ui(app).launch(server_name=args.host, server_port=args.port, share=args.share)
 
 
 if __name__ == "__main__":
