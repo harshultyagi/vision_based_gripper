@@ -56,7 +56,11 @@ selected on validation, and the test numbers above must be reported as already s
   discovery, app error handling).
 * `python -m ruff check src scripts tests app` → clean.
 * `python scripts/check_report.py` → all code snippets and tagged numbers match.
-* Clean clone + fresh venv + `pip install` + pytest: see "Clean-environment check" below.
+* Clean-environment check (2026-10-23): fresh `git clone` → new venv → README install commands →
+  `configs/local.yaml` from the template → CUDA available → **60 passed** → `make_splits.py` reproduced
+  both split files identically (only `created_utc` differs) → `predict.py` with the trained checkpoint
+  gave the same candidates → `check_report.py` passed. This check found and fixed a `.gitignore` bug
+  that had hidden `src/grasp_planner/data/`.
 
 ## Known issues / caveats
 * No true object-wise split (no `z.txt`). The block split is approximate.
