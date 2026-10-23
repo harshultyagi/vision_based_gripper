@@ -1,0 +1,50 @@
+{
+  "num_images": 133,
+  "num_images_with_prediction": 133,
+  "top1_accuracy": 0.9323308270676691,
+  "top5_accuracy": 0.9774436090225563,
+  "best_iou": {
+    "mean": 0.4886689614706016,
+    "median": 0.4763621236003697
+  },
+  "center_error_px": {
+    "mean": 8.010162523773095,
+    "median": 6.016207670933238
+  },
+  "angle_error_deg": {
+    "mean": 14.230108353386127,
+    "median": 8.141426947042998
+  },
+  "width_error_px": {
+    "mean": 16.672268783495348,
+    "median": 12.957722717147846
+  },
+  "mean_num_candidates": 2.699248120300752,
+  "loss": 0.01421917580012092,
+  "experiment": "grconvnet_rgbd_image",
+  "split": "val",
+  "split_file": "experiments/splits/image_wise_seed42.json",
+  "checkpoint": "outputs\\runs\\grconvnet_rgbd_image\\checkpoints\\best.pt",
+  "checkpoint_sha256_16": "23fda02a829da78c",
+  "checkpoint_epoch": 85,
+  "selection_criterion": "best validation top-1 accuracy (ties: lower val loss)",
+  "metric": "Cornell rectangle metric: IoU > 0.25 and |angle diff| < 30 deg (mod 180)",
+  "latency": {
+    "forward_ms_median": 3.6997999995946884,
+    "forward_plus_decode_ms_median": 5.683300027158111,
+    "num_runs": 100,
+    "batch_size": 1,
+    "note": "excludes image file loading and preprocessing; maps copied to CPU before decoding"
+  },
+  "environment": {
+    "python": "3.12.7",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "torch": "2.11.0+cu128",
+    "cuda_runtime": "12.8",
+    "device": "cuda",
+    "cpu": "AMD64 Family 25 Model 116 Stepping 1, AuthenticAMD",
+    "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "gpu_memory_gb": 8.0
+  },
+  "evaluated_utc": "2026-10-23T13:22:42+00:00"
+}

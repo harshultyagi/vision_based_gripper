@@ -1,0 +1,56 @@
+# Experiment log
+
+Chronological record of every run in this project, including smoke tests. Numbers come from
+`outputs/runs/<run>/train_result.json`, `history.csv` and `experiments/results/*.json`.
+
+## 2026-10-23 — Session 1
+
+### Environment
+Windows 11, Python 3.12.10, PyTorch 2.11.0+cu128 (CUDA runtime 12.8), NVIDIA GeForce RTX 4060
+Laptop GPU (8 GB, driver 592.82), AMD Ryzen 7 7840HS, 15.3 GB RAM. Recorded per run in `env.json`.
+
+### Smoke tests (NOT real training)
+`scripts/train.py --smoke`: 2 epochs × 3 batches, 16 validation images. Purpose: check that the
+pipeline runs end to end on real data (loading, AMP, checkpointing, validation decoding).
+All three passed. Their accuracies (0 %) are meaningless and are not reported anywhere.
+Smoke run directories were deleted before the real runs.
+
+| Config | Result |
+|---|---|
+| grconvnet_rgbd_image --smoke | ran; 1,900,900 parameters; checkpoints written |
+| ggcnn_rgbd_image --smoke | ran; 70,196 parameters |
+| grconvnet_rgb_image --smoke | ran |
+
+### Full training runs
+All runs use `configs/default.yaml` plus a 6-line override: identical crop, augmentation,
+loss, optimiser (Adam 1e-3, cosine to 1e-5), batch 8, ≤ 100 epochs, early-stopping patience 30,
+seed 42, decoding. Launched sequentially in the background with `scripts/run_experiments.py`.
+
+| Run | Model | Input | Split | Epochs run | Best epoch | Best val top-1 | Wall time |
+|---|---|---|---|---|---|---|---|
+| grconvnet_rgbd_image | GR-ConvNet | RGB-D | image | 100 | 85 | 93.2 % | 631 s |
+| ggcnn_rgbd_image | GG-CNN | RGB-D | image | 75 (early stop) | 44 | 88.0 % | 406 s |
+| grconvnet_rgbd_block | GR-ConvNet | RGB-D | block | 49 (early stop) | 18 | 80.3 % | 319 s |
+| ggcnn_rgbd_block | GG-CNN | RGB-D | block | 50 (early stop) | 19 | 73.8 % | 224 s |
+| grconvnet_rgb_image | GR-ConvNet | RGB | image | 80 (early stop) | 49 | 90.2 % | 466 s |
+
+(Wall time from `run_experiments.log`, including start-up and per-epoch validation.)
+
+### Model selection — frozen before any test evaluation
+Decided at 2026-10-23 ≈ 18:55 local, using validation results only
+(`experiments/results/*__val.json`):
+
+* **Final model: `grconvnet_rgbd_image`** (`outputs/runs/grconvnet_rgbd_image/checkpoints/best.pt`,
+  epoch 85). It has the highest validation top-1 accuracy among image-wise runs (93.2 % vs 88.0 %
+  for GG-CNN and 90.2 % for RGB-only GR-ConvNet). GR-ConvNet also beats GG-CNN on the block split
+  (80.3 % vs 73.8 %).
+* **RGB-only model for the app** (uploads without depth): `grconvnet_rgb_image`, epoch 49.
+* No hyperparameter was tuned on validation results. The configuration was fixed before training
+  and each configuration was trained exactly once.
+
+After this point each run's `best.pt` is evaluated **once** on its test split
+(`scripts/evaluate.py --split test`). The test numbers are reported as they come and are not
+used to change any model, setting or selection.
+
+### Test evaluation
+See below (appended after it was run).

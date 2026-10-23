@@ -31,3 +31,6 @@ gradio_cached_examples/
 Thumbs.db
 .vscode/
 .idea/
+
+# Per-image overlays (full-size dataset images; regenerate with scripts/evaluate.py)
+experiments/figures/

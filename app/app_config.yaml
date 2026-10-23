@@ -1,0 +1,5 @@
+# Checkpoints used by app/app.py (paths relative to the repository root; checkpoints are not
+# committed — train them with scripts/train.py or copy them into place).
+# Chosen on VALIDATION accuracy (see docs/experiment_log.md).
+rgbd_checkpoint: outputs/runs/grconvnet_rgbd_image/checkpoints/best.pt
+rgb_checkpoint: outputs/runs/grconvnet_rgb_image/checkpoints/best.pt

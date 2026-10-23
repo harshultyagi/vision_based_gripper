@@ -198,6 +198,8 @@ def main() -> None:
     ap.add_argument("--port", type=int, default=7860)
     ap.add_argument("--share", action="store_true")
     args = ap.parse_args()
+    if hasattr(sys.stdout, "reconfigure"):  # Windows consoles default to cp1252
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     cfg_path = REPO / "app" / "app_config.yaml"
     cfg = yaml.safe_load(cfg_path.read_text()) if cfg_path.exists() else {}
 
