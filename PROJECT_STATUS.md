@@ -1,6 +1,6 @@
 # PROJECT_STATUS — hand-off record
 
-_Last updated: 2026-10-23, end of session 1._
+_Last updated: 2026-10-23, end of session 1 (final check re-run: 60 tests pass, lint clean, report checker clean)._
 
 ## Current state
 **All 13 acceptance criteria are met.** The pipeline is complete: data → splits → five fully
@@ -79,3 +79,15 @@ https://github.com/harshultyagi/vision_based_gripper. **Pushed**: `main` tracks 
 2. 3–5 seeds or 5-fold cross-validation for confidence intervals on the model comparison.
 3. Back-project the selected grasp to 3-D using depth and camera intrinsics.
 4. Test-time augmentation; then Jacquard / cluttered datasets.
+
+## Deployment notes (planned: owner wants to host the app later, mentioned Vercel)
+* `app/app.py` is a Gradio app: a long-running Python server that loads PyTorch and a 23 MB
+  checkpoint. Vercel's Python support runs short-lived serverless functions with a bundle-size
+  limit, and the PyTorch dependency alone is likely to exceed it. **Vercel is probably not a
+  fit as-is.** This has not been tried.
+* Realistic options: (a) Hugging Face Spaces (Gradio SDK) or another container host (Render,
+  Railway, Fly.io) with CPU-only torch; (b) Vercel for a static front-end that calls a model API
+  hosted elsewhere; (c) export the model to ONNX and run it with a lighter runtime.
+* Either way the checkpoint is **not in Git**: it must be uploaded to the host (or to a model
+  hub) separately, and the app must load it from there. `app/app_config.yaml` holds the paths.
+* `.claude/launch.json` (untracked) is only the local launcher used for the in-app browser preview.
